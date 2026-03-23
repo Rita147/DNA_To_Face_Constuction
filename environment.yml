@@ -1,0 +1,19 @@
+name: dnaface
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pytorch
+  - torchvision
+  - cudatoolkit=12.1  # or cpuonly if no GPU
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - jupyter
+  - pip
+  - pip:
+      - open3d
+      - trimesh

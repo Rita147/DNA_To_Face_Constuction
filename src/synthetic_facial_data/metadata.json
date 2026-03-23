@@ -1,0 +1,33 @@
+{
+  "n_samples": 100,
+  "n_snps": 12,
+  "snp_list": [
+    "rs12913832",
+    "rs1800407",
+    "rs12896399",
+    "rs16891982",
+    "rs1393350",
+    "rs12203592",
+    "rs1426654",
+    "rs1805007",
+    "rs1805008",
+    "rs1110400",
+    "rs885479",
+    "rs1408799"
+  ],
+  "phenotype_distributions": {
+    "eye_color": {
+      "brown": 52,
+      "intermediate": 47,
+      "blue": 1
+    },
+    "hair_color": {
+      "brown": 100
+    },
+    "skin_tone": {
+      "light": 85,
+      "medium": 14,
+      "dark": 1
+    }
+  }
+}

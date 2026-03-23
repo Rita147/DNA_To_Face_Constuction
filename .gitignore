@@ -1,0 +1,17 @@
+# ignore datasets
+data/*
+!data/hirisplex_full_41snps.csv
+
+# ignore checkpoints
+checkpoints/
+
+# python ignores
+__pycache__/
+*.pyc
+
+# notebooks cache
+.ipynb_checkpoints/
+
+# virtual env
+venv/
+.env/
