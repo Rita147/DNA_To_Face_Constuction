@@ -1,19 +1,3 @@
-"""
-Complete Integrated Pipeline with Extended Traits
-==================================================
-
-This integrates the extended 50+ SNP system into your full pipeline
-so that ALL traits are predicted (no "unknown" values).
-
-Key improvements:
-1. Generates ALL 50+ SNPs (not just 12)
-2. Predicts ALL 28 traits (no unknowns)
-3. Better default handling for missing data
-4. Export to comprehensive CSV
-
-Run this to generate 10K samples with complete phenotypes!
-"""
-
 import os
 import numpy as np
 import pandas as pd
