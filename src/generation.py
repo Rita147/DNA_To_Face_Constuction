@@ -28,6 +28,13 @@ class PhenotypeToPromptConverter:
         prompt_parts.append("professional portrait photograph")
         prompt_parts.append("high quality")
         prompt_parts.append("photorealistic")
+
+        # Demographics
+        sex = phenotype_row.get('sex', 'female')
+        if sex == 'male':
+            prompt_parts.append('adult man')
+        else:
+            prompt_parts.append('adult woman')
         
         # PIGMENTATION
         eye_color = phenotype_row.get('eye_color', 'brown')
@@ -248,7 +255,10 @@ class PhenotypeToPromptConverter:
 
 @dataclass
 class ExtendedFacialPhenotype:
-    """Comprehensive facial phenotype with 28 traits"""
+    """Comprehensive facial phenotype with 29 traits, including sex"""
+
+    # Demographics (1)
+    sex: str
     
     # Pigmentation (3)
     eye_color: str
@@ -555,8 +565,8 @@ class ImprovedPhenotypePredictor:
         }
         return defaults.get(trait_name, 'medium')
     
-    def predict_all_traits(self, genotypes: Dict[str, int]) -> ExtendedFacialPhenotype:
-        """Predict ALL 28 traits (no unknowns!)"""
+    def predict_all_traits(self, genotypes: Dict[str, int], sex: str = 'female') -> ExtendedFacialPhenotype:
+        """Predict all facial traits and attach sex metadata."""
         
         predictions = {}
         confidences = []
@@ -570,6 +580,7 @@ class ImprovedPhenotypePredictor:
         avg_confidence = np.mean(confidences) if confidences else 0.5
         
         return ExtendedFacialPhenotype(
+            sex=sex,
             eye_color=predictions['eye_color'],
             hair_color=predictions['hair_color'],
             skin_tone=predictions['skin_tone'],
@@ -607,7 +618,7 @@ class ImprovedPhenotypePredictor:
 
 def generate_extended_dataset(n_samples: int = 1000, output_dir: str = "extended_facial_data"):
     """
-    Generate dataset with ALL 50+ SNPs and ALL 28 traits
+    Generate dataset with ALL 50+ SNPs and 29 phenotype columns
     
     Args:
         n_samples: Number of individuals to generate
@@ -647,10 +658,14 @@ def generate_extended_dataset(n_samples: int = 1000, output_dir: str = "extended
     
     # Generate genomes (all SNPs)
     genomes = []
+    sample_sexes = []
     for i in range(n_samples):
+        sample_sex = np.random.choice(['female', 'male'])
+        sample_sexes.append(sample_sex)
         genome = {
             'sample_id': f'SYNTH_{i:06d}'
         }
+
         # Generate each SNP (0, 1, or 2)
         for snp in snp_list:
             maf = snp_mafs[snp]
@@ -665,13 +680,13 @@ def generate_extended_dataset(n_samples: int = 1000, output_dir: str = "extended
     print(f"  [OK] Generated {len(genomes_df)} genomes with {len(snp_list)} SNPs")
     
     # Predict phenotypes
-    print(f"\nStep 2: Predicting ALL 28 traits...")
+    print(f"\nStep 2: Predicting all phenotype features...")
     predictor = ImprovedPhenotypePredictor(snp_mappings)
     
     phenotypes = []
     for idx, row in genomes_df.iterrows():
         genotype_dict = {snp: row[snp] for snp in snp_list}
-        phenotype = predictor.predict_all_traits(genotype_dict)
+        phenotype = predictor.predict_all_traits(genotype_dict, sex=sample_sexes[idx])
         
         # Convert to dict
         pheno_dict = asdict(phenotype)
@@ -731,10 +746,10 @@ def generate_extended_dataset(n_samples: int = 1000, output_dir: str = "extended
     print("="*70)
     print(f"Total samples: {len(final_df)}")
     print(f"Total SNPs: {len(snp_list)}")
-    print(f"Total traits: 28")
+    print(f"Total phenotype columns: 29")
     
     print(f"\nPhenotype distributions:")
-    for trait in ['eye_color', 'hair_color', 'skin_tone', 'face_width', 
+    for trait in ['sex', 'eye_color', 'hair_color', 'skin_tone', 'face_width', 
                   'nose_size', 'lip_thickness', 'hair_texture']:
         dist = phenotypes_df[trait].value_counts().head(3).to_dict()
         print(f"  {trait}: {dist}")
@@ -749,14 +764,14 @@ def generate_extended_dataset(n_samples: int = 1000, output_dir: str = "extended
     print(f"\nDataset contains:")
     print(f"   - {len(final_df):,} individuals")
     print(f"   - {len(snp_list)} SNPs (genetic data)")
-    print(f"   - 28 facial traits (phenotype descriptions)")
+    print(f"   - 29 phenotype columns including sex")
     print(f"\nFiles created:")
     print(f"   1. genomes_extended.csv        -> All SNP genotypes")
-    print(f"   2. phenotypes_extended.csv     -> All facial traits")
+    print(f"   2. phenotypes_extended.csv     -> All phenotype columns including sex")
     print(f"   3. dataset_complete_extended.csv -> Complete dataset (GIVE THIS TO PARTNER)")
     print(f"\nReady for face generation!")
     print(f"   Give 'dataset_complete_extended.csv' to your partner")
-    print(f"   They can use the 28 traits to generate detailed faces")
+    print(f"   They can use the phenotype columns to generate detailed faces")
     print("="*70)
     
     return final_df
@@ -771,7 +786,7 @@ if __name__ == "__main__":
     ==========================================================
       Extended Genotype-to-Phenotype Dataset Generator
 
-      50+ SNPs -> 28 Facial Traits
+      50+ SNPs -> 29 Phenotype Columns
       No "unknown" values - complete phenotypes!
     ==========================================================
     """)
@@ -786,6 +801,7 @@ if __name__ == "__main__":
     print(f"\nExample individual:")
     sample = dataset.iloc[0]
     print(f"  Sample ID: {sample['sample_id']}")
+    print(f"  Sex: {sample['sex']}")
     print(f"  Eye: {sample['eye_color']}, Hair: {sample['hair_color']}, Skin: {sample['skin_tone']}")
     print(f"  Face: {sample['face_width']} width, {sample['face_height']} height")
     print(f"  Nose: {sample['nose_size']} size, {sample['nose_bridge_height']} bridge")
