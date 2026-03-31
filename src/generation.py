@@ -30,7 +30,9 @@ class PhenotypeToPromptConverter:
         prompt_parts.append("photorealistic")
 
         # Demographics
-        sex = phenotype_row.get('sex', 'female')
+        sex = phenotype_row.get('sex')
+        if sex not in {'male', 'female'}:
+            raise ValueError("Phenotype row must include a valid 'sex' value: 'male' or 'female'.")
         if sex == 'male':
             prompt_parts.append('adult man')
         else:
@@ -782,14 +784,6 @@ def generate_extended_dataset(n_samples: int = 1000, output_dir: str = "extended
 
 if __name__ == "__main__":
     
-    print("""
-    ==========================================================
-      Extended Genotype-to-Phenotype Dataset Generator
-
-      50+ SNPs -> 29 Phenotype Columns
-      No "unknown" values - complete phenotypes!
-    ==========================================================
-    """)
     
     # Generate dataset - OPTIMIZED FOR FACE GENERATION
     dataset = generate_extended_dataset(
