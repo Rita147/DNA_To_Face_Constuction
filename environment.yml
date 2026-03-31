@@ -15,5 +15,8 @@ dependencies:
   - jupyter
   - pip
   - pip:
-      - open3d
-      - trimesh
+      - diffusers
+      - transformers
+      - accelerate
+      - safetensors
+      - pillow

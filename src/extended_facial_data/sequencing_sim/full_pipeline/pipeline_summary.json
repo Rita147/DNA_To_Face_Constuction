@@ -1,7 +1,0 @@
-{
-  "samples": 10,
-  "snps": 52,
-  "predicted_phenotypes_path": "C:\\Users\\rita\\Desktop\\Fourth_Year\\GraduationProject\\src\\extended_facial_data\\sequencing_sim\\full_pipeline\\predicted_phenotypes_from_reads.csv",
-  "generated_prompts_path": "C:\\Users\\rita\\Desktop\\Fourth_Year\\GraduationProject\\src\\extended_facial_data\\sequencing_sim\\full_pipeline\\generation_prompts_from_reads.csv",
-  "combined_output_path": "C:\\Users\\rita\\Desktop\\Fourth_Year\\GraduationProject\\src\\extended_facial_data\\sequencing_sim\\full_pipeline\\pipeline_output_from_reads.csv"
-}
