@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Facial Reconstruction Using DNA Sequencing</title>
+  <title>3D Facial Reconstruction from DNA Sequencing</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
@@ -28,16 +28,17 @@
   <!-- HERO -->
   <header class="hero">
     <div class="hero-badge">BBM479 · Hacettepe University · 2026</div>
-    <h1 class="hero-title">Facial Reconstruction<br /><em>Using DNA Sequencing</em></h1>
+    <h1 class="hero-title">3D Facial Reconstruction<br /><em>from DNA Sequencing</em></h1>
     <p class="hero-sub">
-      An end-to-end synthetic pipeline that bridges genomic data with
-      photorealistic human face generation — from SNP genotypes to Stable Diffusion imagery.
+      An end-to-end pipeline that translates raw SNP genotypes into a photorealistic 2D portrait
+      <em>and</em> a fully fitted 3D FLAME face model — bridging genomic data and
+      spatial facial structure in a single automated pipeline.
     </p>
     <div class="hero-pills">
+      <span class="pill pill-lavender">3D FLAME Model</span>
       <span class="pill pill-blue">Bioinformatics</span>
-      <span class="pill pill-lavender">Generative AI</span>
-      <span class="pill pill-rose">Population Genetics</span>
-      <span class="pill pill-mint">Computer Vision</span>
+      <span class="pill pill-rose">Generative AI</span>
+      <span class="pill pill-mint">Population Genetics</span>
     </div>
     <div class="hero-scroll-hint">scroll to explore ↓</div>
   </header>
@@ -46,35 +47,34 @@
   <section class="section" id="overview">
     <div class="container">
       <div class="section-label">Project Overview</div>
-      <h2 class="section-title">From DNA to a Human Face</h2>
+      <h2 class="section-title">From DNA to a 3D Human Face</h2>
       <p class="section-desc">
-        This project constructs a fully synthetic, end-to-end pipeline that translates
-        genetic sequencing data into visually realistic human portraits. Starting from
-        simulated SNP genotypes across 50+ genes, the system predicts 29 distinct facial
-        phenotype traits and converts them into detailed generation prompts fed to a
-        fine-tuned Stable Diffusion model.
+        This project builds an end-to-end pipeline that takes raw genetic sequencing data and produces
+        two complementary outputs: a photorealistic 2D portrait and a geometrically fitted 3D FLAME face model.
+        Starting from simulated SNP genotypes across 50+ genes, the system predicts 29 facial phenotype traits,
+        generates a Stable Diffusion portrait, and optimises a parametric 3D head to match the predicted measurements.
       </p>
 
       <div class="cards-grid">
+        <div class="card card-lavender">
+          <div class="card-icon">🗿</div>
+          <h3>3D FLAME Model</h3>
+          <p>Phenotype measurements drive FLAME shape parameter optimisation, producing a geometrically accurate 3D head with predicted skin, hair, and eye colours applied.</p>
+        </div>
         <div class="card card-blue">
           <div class="card-icon">🧬</div>
           <h3>50+ Genes</h3>
           <p>SNP database covering genes linked to eye colour, face shape, skin tone, hair texture, and more.</p>
         </div>
-        <div class="card card-lavender">
-          <div class="card-icon">🔬</div>
-          <h3>29 Phenotype Traits</h3>
-          <p>Weighted genotype scoring predicts a rich facial feature vector from raw sequencing data.</p>
-        </div>
         <div class="card card-rose">
           <div class="card-icon">🖼️</div>
-          <h3>Stable Diffusion</h3>
+          <h3>2D Portrait Generation</h3>
           <p>CelebA-fine-tuned LoRA model generates photorealistic portraits from phenotype-derived prompts.</p>
         </div>
         <div class="card card-mint">
-          <div class="card-icon">⚗️</div>
-          <h3>Realistic Sequencing</h3>
-          <p>Read simulation with configurable coverage depth, read length, and sequencing error rates.</p>
+          <div class="card-icon">🔬</div>
+          <h3>29 Phenotype Traits</h3>
+          <p>Weighted genotype scoring predicts a rich facial feature vector from raw sequencing data.</p>
         </div>
       </div>
     </div>
@@ -84,10 +84,10 @@
   <section class="section section-tinted" id="pipeline">
     <div class="container">
       <div class="section-label">How It Works</div>
-      <h2 class="section-title">The Five-Stage Pipeline</h2>
+      <h2 class="section-title">The Six-Stage Pipeline</h2>
       <p class="section-desc">
-        Each stage is modular and independently testable. The pipeline can be run
-        end-to-end with a single command or stage-by-stage for inspection and analysis.
+        Each stage is modular and independently testable. The pipeline runs end-to-end with a single
+        command, producing both a 2D portrait and a 3D FLAME face model from the same DNA input.
       </p>
 
       <div class="pipeline">
@@ -116,7 +116,7 @@
         <div class="pipeline-step">
           <div class="step-num">03</div>
           <div class="step-body">
-            <h3>Genotype Calling & VCF Generation</h3>
+            <h3>Genotype Calling &amp; VCF Generation</h3>
             <p>Allele counts from reads are used to call SNP genotypes. Accuracy is tracked against ground-truth genotypes and results are exported as VCF files.</p>
             <span class="step-file">call_genotypes_from_reads.py</span>
           </div>
@@ -138,9 +138,20 @@
         <div class="pipeline-step">
           <div class="step-num">05</div>
           <div class="step-body">
-            <h3>Face Image Generation</h3>
+            <h3>2D Portrait Generation</h3>
             <p>Phenotype vectors are converted to rich text prompts and fed to Stable Diffusion v1.5 with a CelebA LoRA fine-tune, producing photorealistic synthetic portraits.</p>
             <span class="step-file">generate_face_images.py</span>
+          </div>
+        </div>
+
+        <div class="pipeline-arrow">↓</div>
+
+        <div class="pipeline-step pipeline-step--highlight">
+          <div class="step-num step-num--highlight">06</div>
+          <div class="step-body">
+            <h3>3D FLAME Model Fitting</h3>
+            <p>Predicted facial measurements drive iterative FLAME shape parameter optimisation. The resulting 3D mesh is rendered with appearance parameters — skin tone, hair colour, and eye colour — applied as material properties via pyrender.</p>
+            <span class="step-file">generate_from_parameters.py · appearance_scene.py</span>
           </div>
         </div>
       </div>
@@ -153,8 +164,9 @@
       <div class="section-label">Pipeline Results</div>
       <h2 class="section-title">What We Produced</h2>
       <p class="section-desc">
-        The pipeline was run on a synthetic cohort of 10 samples across 52 SNP loci,
-        achieving perfect genotype calling accuracy before generating photorealistic portrait images.
+        The pipeline was run on a synthetic cohort of 10 samples across 52 SNP loci, achieving
+        perfect genotype calling accuracy and producing both a photorealistic 2D portrait and a
+        parametric 3D FLAME face model for each individual.
       </p>
 
       <!-- STATS ROW -->
@@ -176,8 +188,8 @@
         </div>
         <div class="stat-block">
           <div class="stat-num">5</div>
-          <div class="stat-label">Portraits Generated</div>
-          <div class="stat-sub">SD v1.5 + CelebA LoRA</div>
+          <div class="stat-label">2D + 3D Face Pairs</div>
+          <div class="stat-sub">SD portrait + FLAME model</div>
         </div>
       </div>
 

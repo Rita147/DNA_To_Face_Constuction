@@ -276,6 +276,11 @@ a {
   padding: 28px 32px;
 }
 
+.pipeline-step--highlight {
+  background: linear-gradient(135deg, var(--lavender-light) 0%, var(--blue-light) 100%);
+  border-color: var(--lavender);
+}
+
 .step-num {
   font-family: var(--font-serif);
   font-size: 32px;
@@ -284,6 +289,10 @@ a {
   line-height: 1;
   flex-shrink: 0;
   min-width: 44px;
+}
+
+.step-num--highlight {
+  color: var(--lavender-dark);
 }
 
 .step-body h3 {
