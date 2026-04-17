@@ -13,6 +13,16 @@ DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "synthetic_d
 
 class PhenotypeToPromptConverter:
     """Convert phenotypes to detailed text prompts for face generation"""
+
+    @staticmethod
+    def get_gender_value(phenotype_row: pd.Series) -> str:
+        """Return the demographic value used for prompt wording."""
+        gender = phenotype_row.get('gender', phenotype_row.get('sex'))
+        if gender not in {'male', 'female'}:
+            raise ValueError(
+                "Phenotype row must include a valid 'gender' value: 'male' or 'female'."
+            )
+        return gender
     
     @staticmethod
     def create_generation_prompt(phenotype_row: pd.Series) -> str:
@@ -33,10 +43,8 @@ class PhenotypeToPromptConverter:
         prompt_parts.append("photorealistic")
 
         # Demographics
-        sex = phenotype_row.get('sex')
-        if sex not in {'male', 'female'}:
-            raise ValueError("Phenotype row must include a valid 'sex' value: 'male' or 'female'.")
-        if sex == 'male':
+        gender = PhenotypeToPromptConverter.get_gender_value(phenotype_row)
+        if gender == 'male':
             prompt_parts.append('adult man')
         else:
             prompt_parts.append('adult woman')
@@ -283,10 +291,10 @@ class PhenotypeToPromptConverter:
 
 @dataclass
 class ExtendedFacialPhenotype:
-    """Comprehensive facial phenotype with 29 traits, including sex"""
+    """Comprehensive facial phenotype with 29 traits, including gender."""
 
     # Demographics (1)
-    sex: str
+    gender: str
     
     # Pigmentation (3)
     eye_color: str
@@ -593,8 +601,17 @@ class ImprovedPhenotypePredictor:
         }
         return defaults.get(trait_name, 'medium')
     
-    def predict_all_traits(self, genotypes: Dict[str, int], sex: str = 'female') -> ExtendedFacialPhenotype:
-        """Predict all facial traits and attach sex metadata."""
+    def predict_all_traits(
+        self,
+        genotypes: Dict[str, int],
+        gender: str = 'female',
+        sex: Optional[str] = None,
+    ) -> ExtendedFacialPhenotype:
+        """Predict all facial traits and attach gender metadata."""
+        if sex is not None and gender == 'female':
+            gender = sex
+        if gender not in {'male', 'female'}:
+            gender = 'female'
         
         predictions = {}
         confidences = []
@@ -608,7 +625,7 @@ class ImprovedPhenotypePredictor:
         avg_confidence = np.mean(confidences) if confidences else 0.5
         
         return ExtendedFacialPhenotype(
-            sex=sex,
+            gender=gender,
             eye_color=predictions['eye_color'],
             hair_color=predictions['hair_color'],
             skin_tone=predictions['skin_tone'],
@@ -646,7 +663,7 @@ class ImprovedPhenotypePredictor:
 
 def generate_extended_dataset(n_samples: int = 1000, output_dir: Optional[Path] = None):
     """
-    Generate dataset with ALL 50+ SNPs and 29 phenotype columns
+    Generate dataset with ALL 50+ SNPs and phenotype columns
     
     Args:
         n_samples: Number of individuals to generate
@@ -684,10 +701,10 @@ def generate_extended_dataset(n_samples: int = 1000, output_dir: Optional[Path] 
     
     # Generate genomes (all SNPs)
     genomes = []
-    sample_sexes = []
+    sample_genders = []
     for i in range(n_samples):
-        sample_sex = np.random.choice(['female', 'male'])
-        sample_sexes.append(sample_sex)
+        sample_gender = np.random.choice(['female', 'male'])
+        sample_genders.append(sample_gender)
         genome = {
             'sample_id': f'SYNTH_{i:06d}'
         }
@@ -712,7 +729,7 @@ def generate_extended_dataset(n_samples: int = 1000, output_dir: Optional[Path] 
     phenotypes = []
     for idx, row in genomes_df.iterrows():
         genotype_dict = {snp: row[snp] for snp in snp_list}
-        phenotype = predictor.predict_all_traits(genotype_dict, sex=sample_sexes[idx])
+        phenotype = predictor.predict_all_traits(genotype_dict, gender=sample_genders[idx])
         
         # Convert to dict
         pheno_dict = asdict(phenotype)
@@ -772,10 +789,10 @@ def generate_extended_dataset(n_samples: int = 1000, output_dir: Optional[Path] 
     print("="*70)
     print(f"Total samples: {len(final_df)}")
     print(f"Total SNPs: {len(snp_list)}")
-    print(f"Total phenotype columns: 29")
+    print(f"Total phenotype trait columns: 29")
     
     print(f"\nPhenotype distributions:")
-    for trait in ['sex', 'eye_color', 'hair_color', 'skin_tone', 'face_width', 
+    for trait in ['gender', 'eye_color', 'hair_color', 'skin_tone', 'face_width',
                   'nose_size', 'lip_thickness', 'hair_texture']:
         dist = phenotypes_df[trait].value_counts().head(3).to_dict()
         print(f"  {trait}: {dist}")
@@ -790,10 +807,10 @@ def generate_extended_dataset(n_samples: int = 1000, output_dir: Optional[Path] 
     print(f"\nDataset contains:")
     print(f"   - {len(final_df):,} individuals")
     print(f"   - {len(snp_list)} SNPs (genetic data)")
-    print(f"   - 29 phenotype columns including sex")
+    print(f"   - 29 phenotype trait columns including gender")
     print(f"\nFiles created:")
     print(f"   1. synthetic_genotypes.csv        -> All SNP genotypes")
-    print(f"   2. predicted_phenotypes.csv       -> All phenotype columns including sex")
+    print(f"   2. predicted_phenotypes.csv       -> All phenotype columns including gender")
     print(f"   3. synthetic_dataset_complete.csv -> Complete merged dataset")
     print(f"\nReady for face generation!")
     print(f"   Give 'synthetic_dataset_complete.csv' to your partner")
@@ -819,7 +836,7 @@ if __name__ == "__main__":
     print(f"\nExample individual:")
     sample = dataset.iloc[0]
     print(f"  Sample ID: {sample['sample_id']}")
-    print(f"  Sex: {sample['sex']}")
+    print(f"  Gender: {sample['gender']}")
     print(f"  Eye: {sample['eye_color']}, Hair: {sample['hair_color']}, Skin: {sample['skin_tone']}")
     print(f"  Face: {sample['face_width']} width, {sample['face_height']} height")
     print(f"  Nose: {sample['nose_size']} size, {sample['nose_bridge_height']} bridge")

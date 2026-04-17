@@ -36,8 +36,14 @@ def run_command(args: list[str]) -> None:
 
 def build_outputs(called_genotypes_path: Path, phenotypes_path: Path, output_dir: Path) -> None:
     called_df = pd.read_csv(called_genotypes_path)
-    sex_df = pd.read_csv(phenotypes_path)[["sample_id", "sex"]]
-    merged_df = called_df.merge(sex_df, on="sample_id", how="left")
+    source_phenotypes_df = pd.read_csv(phenotypes_path)
+    demographic_columns = ["sample_id"]
+    if "gender" in source_phenotypes_df.columns:
+        demographic_columns.append("gender")
+    if "sex" in source_phenotypes_df.columns:
+        demographic_columns.append("sex")
+    demographics_df = source_phenotypes_df[demographic_columns]
+    merged_df = called_df.merge(demographics_df, on="sample_id", how="left")
 
     snp_mappings = get_comprehensive_snp_mappings()
     predictor = ImprovedPhenotypePredictor(snp_mappings)
@@ -50,8 +56,9 @@ def build_outputs(called_genotypes_path: Path, phenotypes_path: Path, output_dir
 
     for _, row in merged_df.iterrows():
         genotype_dict = {snp: int(row[snp]) for snp in snp_columns}
-        sex = row["sex"] if row["sex"] in {"male", "female"} else "female"
-        phenotype = predictor.predict_all_traits(genotype_dict, sex=sex)
+        gender = row.get("gender", row.get("sex"))
+        gender = gender if gender in {"male", "female"} else "female"
+        phenotype = predictor.predict_all_traits(genotype_dict, gender=gender)
         phenotype_dict = phenotype.__dict__.copy()
         phenotype_dict["sample_id"] = row["sample_id"]
         phenotype_rows.append(phenotype_dict)

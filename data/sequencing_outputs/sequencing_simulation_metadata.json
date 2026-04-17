@@ -1,0 +1,26 @@
+{
+  "sample_count": 10,
+  "snp_count": 52,
+  "coverage_per_snp": 12,
+  "read_length": 31,
+  "error_rate": 0.01,
+  "seed": 7,
+  "files": {
+    "catalog": "C:\\Users\\rita\\Desktop\\Fourth_Year\\GraduationProject\\data\\sequencing_outputs\\reference_snp_catalog.csv",
+    "reads_csv": "C:\\Users\\rita\\Desktop\\Fourth_Year\\GraduationProject\\data\\sequencing_outputs\\simulated_targeted_reads.csv",
+    "reads_fastq": "C:\\Users\\rita\\Desktop\\Fourth_Year\\GraduationProject\\data\\sequencing_outputs\\simulated_targeted_reads.fastq",
+    "true_genotypes": "C:\\Users\\rita\\Desktop\\Fourth_Year\\GraduationProject\\data\\sequencing_outputs\\reference_genotypes_for_simulation.csv"
+  },
+  "samples": [
+    "SYNTH_001977",
+    "SYNTH_003880",
+    "SYNTH_000052",
+    "SYNTH_002551",
+    "SYNTH_002246",
+    "SYNTH_000270",
+    "SYNTH_000601",
+    "SYNTH_002441",
+    "SYNTH_003286",
+    "SYNTH_002967"
+  ]
+}

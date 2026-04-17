@@ -1,0 +1,19 @@
+asset_id,asset_name,source_library,asset_path,sex_compatibility,hair_texture,hairline_shape,supports_color_materials,supports_thickness_parameters,file_format,license,notes
+hair_female_curly_rounded,hair female curly rounded,TODO,assets/hair/hair_female_curly_rounded.fbx,female,curly,rounded,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.
+hair_female_curly_straight,hair female curly straight,TODO,assets/hair/hair_female_curly_straight.fbx,female,curly,straight,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.
+hair_female_curly_widow_peak,hair female curly widow peak,TODO,assets/hair/hair_female_curly_widow_peak.fbx,female,curly,widow_peak,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.
+hair_female_straight_rounded,hair female straight rounded,TODO,assets/hair/hair_female_straight_rounded.fbx,female,straight,rounded,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.
+hair_female_straight_straight,hair female straight straight,TODO,assets/hair/hair_female_straight_straight.fbx,female,straight,straight,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.
+hair_female_straight_widow_peak,hair female straight widow peak,TODO,assets/hair/hair_female_straight_widow_peak.fbx,female,straight,widow_peak,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.
+hair_female_wavy_rounded,hair female wavy rounded,TODO,assets/hair/hair_female_wavy_rounded.fbx,female,wavy,rounded,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.
+hair_female_wavy_straight,hair female wavy straight,TODO,assets/hair/hair_female_wavy_straight.fbx,female,wavy,straight,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.
+hair_female_wavy_widow_peak,hair female wavy widow peak,TODO,assets/hair/hair_female_wavy_widow_peak.fbx,female,wavy,widow_peak,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.
+hair_male_curly_rounded,hair male curly rounded,TODO,assets/hair/hair_male_curly_rounded.fbx,male,curly,rounded,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.
+hair_male_curly_straight,hair male curly straight,TODO,assets/hair/hair_male_curly_straight.fbx,male,curly,straight,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.
+hair_male_curly_widow_peak,hair male curly widow peak,TODO,assets/hair/hair_male_curly_widow_peak.fbx,male,curly,widow_peak,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.
+hair_male_straight_rounded,hair male straight rounded,TODO,assets/hair/hair_male_straight_rounded.fbx,male,straight,rounded,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.
+hair_male_straight_straight,hair male straight straight,TODO,assets/hair/hair_male_straight_straight.fbx,male,straight,straight,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.
+hair_male_straight_widow_peak,hair male straight widow peak,TODO,assets/hair/hair_male_straight_widow_peak.fbx,male,straight,widow_peak,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.
+hair_male_wavy_rounded,hair male wavy rounded,TODO,assets/hair/hair_male_wavy_rounded.fbx,male,wavy,rounded,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.
+hair_male_wavy_straight,hair male wavy straight,TODO,assets/hair/hair_male_wavy_straight.fbx,male,wavy,straight,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.
+hair_male_wavy_widow_peak,hair male wavy widow peak,TODO,assets/hair/hair_male_wavy_widow_peak.fbx,male,wavy,widow_peak,True,True,fbx,TODO,Replace this placeholder with a real hair asset path.

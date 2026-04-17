@@ -1,0 +1,10 @@
+{
+  "sample_id": "SYNTH_000052",
+  "source_row": 0,
+  "seed": 0,
+  "model_id": "runwayml/stable-diffusion-v1-5",
+  "lora_path": "C:\\Users\\rita\\Desktop\\Fourth_Year\\GraduationProject\\assets\\lora\\celeba_lora_v2.safetensors",
+  "positive_prompt": "professional portrait photograph, high quality, photorealistic, adult woman, dark brown eyes, brown hair, dark skin, long face, square jawline, receding chin, wide nose, wide nostrils, close-set eyes, almond-shaped eyes, high-arched eyebrows, full lips, narrow mouth, deep philtrum, curly hair, widow's peak hairline, light freckles, attached earlobes, neutral expression, centered face, soft lighting, plain background",
+  "negative_prompt": "deformed, ugly, blurry, bad anatomy, bad hands, extra fingers, missing fingers, fused fingers, too many fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, disfigured, extra limbs, cloned face, malformed limbs, missing arms, missing legs, extra arms, extra legs, low quality, worst quality, jpeg artifacts, watermark, signature, text, cropped, out of frame, duplicate, morbid, gross proportions, long neck, asymmetrical eyes, crossed eyes, lazy eye, skin blemishes, acne, overexposed, underexposed, cartoon, anime, illustration, painting, drawing, sketch, 3d render, cgi, plastic skin, doll-like, distorted face, multiple people",
+  "image_path": "C:\\Users\\rita\\Desktop\\Fourth_Year\\GraduationProject\\data\\generated_images\\SYNTH_000052.png"
+}

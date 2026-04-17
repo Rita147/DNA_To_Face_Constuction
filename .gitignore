@@ -1,6 +1,3 @@
-# ── Generated data ────────────────────────────────────────────────────────────
-data/
-
 # ── Model checkpoints / weights ───────────────────────────────────────────────
 checkpoints/
 # Intermediate LoRA step checkpoints — only keep the final safetensors files

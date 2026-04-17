@@ -1,0 +1,7 @@
+{
+  "samples": 10,
+  "snps": 52,
+  "predicted_phenotypes_path": "C:\\Users\\rita\\Desktop\\Fourth_Year\\GraduationProject\\data\\sequencing_outputs\\pipeline_outputs\\predicted_phenotypes_from_reads.csv",
+  "generated_prompts_path": "C:\\Users\\rita\\Desktop\\Fourth_Year\\GraduationProject\\data\\sequencing_outputs\\pipeline_outputs\\face_generation_prompts_from_reads.csv",
+  "combined_output_path": "C:\\Users\\rita\\Desktop\\Fourth_Year\\GraduationProject\\data\\sequencing_outputs\\pipeline_outputs\\complete_pipeline_output_from_reads.csv"
+}
