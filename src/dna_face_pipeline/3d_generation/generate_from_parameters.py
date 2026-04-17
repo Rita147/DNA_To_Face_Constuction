@@ -20,10 +20,12 @@ from .measurement_utils import (
     build_measurement_metadata,
 )
 
+
 from .appearance_mappings import (
     extract_appearance_traits_from_row,
     build_appearance_render_plan,
 )
+
 
 from .appearance_scene import (
     build_face_mesh_with_skin_tone,
@@ -1924,7 +1926,7 @@ def main():
     # 2) Experiment selection
     # ------------------------------------------------------------
     dataset_mode = True
-    dataset_csv_path = Path(__file__).resolve().parents[4] / "data" / "synthetic_dataset" / "synthetic_dataset_complete.csv"
+    dataset_csv_path = Path(__file__).resolve().parents[3] / "data" / "synthetic_dataset" / "synthetic_dataset_complete.csv"
     dataset_sample_id = "SYNTH_000000"   # first strong geometry test row
 
     dataset_metadata: Dict[str, object] | None = None
@@ -2383,71 +2385,5 @@ def main():
         )
 
 
-def run_batch(sample_ids: List[str], dataset_csv: Path, output_dir: Path) -> None:
-    """
-    Entry point for pipeline integration: runs 3D FLAME fitting for a list of
-    sample IDs drawn from the given dataset CSV, saving outputs to output_dir.
-    """
-    import copy
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    flame_config = get_config()
-    flame_config.batch_size = 1
-    flame = FLAME(flame_config).to(device)
-
-    zeros_exp = torch.zeros(1, flame_config.expression_params, device=device)
-    zeros_pose = torch.zeros(1, flame_config.pose_params, device=device)
-
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    for sample_id in sample_ids:
-        print(f"\n  Processing {sample_id}...")
-        try:
-            experiment_config, dataset_metadata = build_dataset_row_experiment_config(
-                dataset_csv_path=dataset_csv,
-                sample_id=sample_id,
-            )
-        except (FileNotFoundError, ValueError) as exc:
-            print(f"  Skipping {sample_id}: {exc}")
-            continue
-
-        sample_out = output_dir / sample_id
-        sample_out.mkdir(parents=True, exist_ok=True)
-
-        if dataset_metadata is not None:
-            appearance_preview = {
-                "sample_id": dataset_metadata["sample_id"],
-                "appearance_traits": dataset_metadata.get("appearance_traits", {}),
-                "appearance_render_plan": dataset_metadata.get("appearance_render_plan", {}),
-                "geometry_traits": dataset_metadata.get("geometry_traits", {}),
-                "control_scores": dataset_metadata.get("control_scores", {}),
-            }
-            (sample_out / "appearance_preview.json").write_text(
-                json.dumps(appearance_preview, indent=2)
-            )
-
-        print(f"  Saved 3D metadata to: {sample_out / 'appearance_preview.json'}")
-
-
 if __name__ == "__main__":
-    import argparse as _argparse
-
-    _parser = _argparse.ArgumentParser(
-        description="3D FLAME face fitting from phenotype dataset."
-    )
-    _parser.add_argument("--sample-ids", nargs="+", metavar="ID",
-                         help="Sample IDs to process. Omit to run main() demo mode.")
-    _parser.add_argument("--dataset-csv", type=Path,
-                         help="Path to synthetic_dataset_complete.csv")
-    _parser.add_argument("--output-dir", type=Path, default=Path("data/3d_outputs"),
-                         help="Directory to write per-sample output folders")
-    _args = _parser.parse_args()
-
-    if _args.sample_ids and _args.dataset_csv:
-        run_batch(
-            sample_ids=_args.sample_ids,
-            dataset_csv=_args.dataset_csv,
-            output_dir=_args.output_dir,
-        )
-    else:
-        main()
+    main()
