@@ -27,6 +27,7 @@ MODULE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = MODULE_DIR.parents[1]
 SEQUENCING_DIR = PROJECT_ROOT / "data" / "sequencing_outputs"
 PHENOTYPES_PATH = DATASET_OUTPUT_DIR / "predicted_phenotypes.csv"
+DATASET_CSV_PATH = DATASET_OUTPUT_DIR / "synthetic_dataset_complete.csv"
 
 
 def run_command(args: list[str]) -> None:
@@ -87,44 +88,135 @@ def build_outputs(called_genotypes_path: Path, phenotypes_path: Path, output_dir
     with summary_path.open("w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
 
+    return combined_path
+
+
+def run_2d_image_generation(prompts_csv: Path, output_dir: Path) -> None:
+    run_command(
+        [
+            sys.executable,
+            str(MODULE_DIR / "image_generation" / "generate_face_images.py"),
+            "--prompts-csv", str(prompts_csv),
+            "--output-dir", str(output_dir),
+        ]
+    )
+
+
+def run_3d_generation(sample_ids: list[str], dataset_csv: Path, output_dir: Path) -> None:
+    run_command(
+        [
+            sys.executable,
+            str(MODULE_DIR / "3d_generation" / "generate_from_parameters.py"),
+            "--sample-ids", *sample_ids,
+            "--dataset-csv", str(dataset_csv),
+            "--output-dir", str(output_dir),
+        ]
+    )
+
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the full synthetic DNA -> genotype -> phenotype -> prompt pipeline.")
-    parser.add_argument("--sample-count", type=int, default=25)
-    parser.add_argument("--coverage", type=int, default=20)
-    parser.add_argument("--read-length", type=int, default=31)
-    parser.add_argument("--error-rate", type=float, default=0.01)
-    parser.add_argument("--seed", type=int, default=7)
+    parser = argparse.ArgumentParser(
+        description=(
+            "Full synthetic DNA → sequencing → genotype → phenotype → 2D image → 3D model pipeline.\n\n"
+            "Stages:\n"
+            "  1  Genotype simulation (dataset_builder)\n"
+            "  2  Sequencing read simulation\n"
+            "  3  Genotype calling from reads → VCF\n"
+            "  4  Phenotype prediction from called genotypes\n"
+            "  5  2D face image generation (Stable Diffusion + LoRA)\n"
+            "  6  3D FLAME model fitting from phenotypes"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("--sample-count", type=int, default=25,
+                        help="Number of synthetic samples to generate (default: 25)")
+    parser.add_argument("--coverage", type=int, default=20,
+                        help="Target sequencing read depth per locus (default: 20)")
+    parser.add_argument("--read-length", type=int, default=31,
+                        help="Simulated read length in base pairs (default: 31)")
+    parser.add_argument("--error-rate", type=float, default=0.01,
+                        help="Per-base sequencing error rate (default: 0.01)")
+    parser.add_argument("--seed", type=int, default=7,
+                        help="Random seed for reproducibility (default: 7)")
+    parser.add_argument("--skip-2d", action="store_true",
+                        help="Skip Stage 5: 2D Stable Diffusion image generation")
+    parser.add_argument("--skip-3d", action="store_true",
+                        help="Skip Stage 6: 3D FLAME model fitting")
+    parser.add_argument("--3d-samples", nargs="+", metavar="SAMPLE_ID",
+                        help="Specific sample IDs to run through Stage 6 (default: all samples)")
     args = parser.parse_args()
 
+    # ── Stage 1: Genotype simulation ──────────────────────────────────────────
+    print("\n[Stage 1/6] Simulating synthetic genotypes...")
     run_command(
         [
             sys.executable,
             str(MODULE_DIR / "sequencing" / "simulate_targeted_reads.py"),
-            "--sample-count",
-            str(args.sample_count),
-            "--coverage",
-            str(args.coverage),
-            "--read-length",
-            str(args.read_length),
-            "--error-rate",
-            str(args.error_rate),
-            "--seed",
-            str(args.seed),
+            "--sample-count", str(args.sample_count),
+            "--coverage", str(args.coverage),
+            "--read-length", str(args.read_length),
+            "--error-rate", str(args.error_rate),
+            "--seed", str(args.seed),
         ]
     )
+
+    # ── Stage 2 → 3: Sequencing simulation + genotype calling ─────────────────
+    print("\n[Stage 2/6] Simulating sequencing reads...")
+    print("\n[Stage 3/6] Calling genotypes from reads → VCF...")
     run_command([sys.executable, str(MODULE_DIR / "sequencing" / "call_genotypes_from_reads.py")])
 
+    # ── Stage 4: Phenotype prediction ─────────────────────────────────────────
+    print("\n[Stage 4/6] Predicting phenotypes from called genotypes...")
     pipeline_dir = SEQUENCING_DIR / "pipeline_outputs"
-    build_outputs(
+    combined_path = build_outputs(
         called_genotypes_path=SEQUENCING_DIR / "called_snp_genotypes.csv",
         phenotypes_path=PHENOTYPES_PATH,
         output_dir=pipeline_dir,
     )
 
-    print("Completed full synthetic pipeline")
-    print(f"- Sequencing artifacts: {SEQUENCING_DIR}")
-    print(f"- Final pipeline outputs: {pipeline_dir}")
+    # ── Stage 5: 2D image generation ──────────────────────────────────────────
+    if not args.skip_2d:
+        print("\n[Stage 5/6] Generating 2D face images via Stable Diffusion + CelebA LoRA...")
+        images_dir = PROJECT_ROOT / "data" / "generated_images"
+        prompts_csv = pipeline_dir / "face_generation_prompts_from_reads.csv"
+        run_2d_image_generation(prompts_csv=prompts_csv, output_dir=images_dir)
+    else:
+        print("\n[Stage 5/6] Skipped (--skip-2d)")
+
+    # ── Stage 6: 3D FLAME model fitting ───────────────────────────────────────
+    if not args.skip_3d:
+        print("\n[Stage 6/6] Fitting 3D FLAME models from phenotype measurements...")
+        output_3d_dir = PROJECT_ROOT / "data" / "3d_outputs"
+
+        if args.__dict__["3d_samples"]:
+            sample_ids = args.__dict__["3d_samples"]
+        else:
+            # default: use all sample IDs from the combined pipeline output
+            if combined_path.exists():
+                df = pd.read_csv(combined_path)
+                sample_ids = df["sample_id"].tolist()
+            else:
+                sample_ids = []
+
+        if sample_ids:
+            run_3d_generation(
+                sample_ids=sample_ids,
+                dataset_csv=DATASET_CSV_PATH,
+                output_dir=output_3d_dir,
+            )
+        else:
+            print("  No sample IDs found — skipping 3D generation.")
+    else:
+        print("\n[Stage 6/6] Skipped (--skip-3d)")
+
+    # ── Summary ───────────────────────────────────────────────────────────────
+    print("\n✓ Pipeline complete.")
+    print(f"  Sequencing artifacts : {SEQUENCING_DIR}")
+    print(f"  Phenotype outputs    : {pipeline_dir}")
+    if not args.skip_2d:
+        print(f"  2D face images       : {PROJECT_ROOT / 'data' / 'generated_images'}")
+    if not args.skip_3d:
+        print(f"  3D model outputs     : {PROJECT_ROOT / 'data' / '3d_outputs'}")
 
 
 if __name__ == "__main__":
