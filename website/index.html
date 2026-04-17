@@ -181,130 +181,235 @@
         </div>
       </div>
 
-      <!-- FACE GALLERY -->
+      <!-- 2D / 3D COMPARISON -->
       <div class="gallery-label">
-        <h3>Generated Synthetic Portraits</h3>
-        <p>Each portrait was generated from a unique DNA-derived phenotype vector using Stable Diffusion v1.5 fine-tuned on CelebA with LoRA. Hover a card to see the traits used.</p>
+        <h3>2D Portrait &amp; 3D FLAME Model</h3>
+        <p>Each sample produces two outputs from the same phenotype vector: a Stable Diffusion portrait (left) and a FLAME-based 3D head model coloured with predicted appearance parameters (right).</p>
       </div>
 
-      <div class="gallery">
+      <div class="comparison-list">
 
-        <div class="gallery-card">
-          <div class="gallery-img-wrap">
-            <img src="images/SYNTH_000052.png" alt="SYNTH_000052 generated portrait" loading="lazy" />
-            <div class="gallery-overlay">
-              <div class="overlay-id">SYNTH_000052</div>
-              <div class="overlay-traits">
-                <span class="trait-tag">Dark Brown Eyes</span>
-                <span class="trait-tag">Brown Hair</span>
-                <span class="trait-tag">Dark Skin</span>
-                <span class="trait-tag">Long Face</span>
-                <span class="trait-tag">Square Jaw</span>
-                <span class="trait-tag">Wide Nose</span>
-                <span class="trait-tag">Curly Hair</span>
-                <span class="trait-tag">Full Lips</span>
+        <div class="comparison-item">
+          <div class="comparison-pair">
+            <div class="comparison-half">
+              <img src="images/SYNTH_000052.png" alt="SYNTH_000052 2D portrait" loading="lazy" />
+              <div class="comparison-label">2D Portrait &middot; SD v1.5 + LoRA</div>
+            </div>
+            <div class="comparison-divider"></div>
+            <div class="comparison-half">
+              <div class="model-placeholder">
+                <div class="placeholder-icon">
+                  <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="32" cy="28" rx="16" ry="20" fill="currentColor" opacity="0.15"/>
+                    <ellipse cx="32" cy="28" rx="16" ry="20" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <ellipse cx="26" cy="25" rx="3" ry="3.5" fill="currentColor" opacity="0.4"/>
+                    <ellipse cx="38" cy="25" rx="3" ry="3.5" fill="currentColor" opacity="0.4"/>
+                    <path d="M27 35 Q32 38 37 35" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.5"/>
+                    <path d="M20 50 Q32 44 44 50" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.3"/>
+                  </svg>
+                </div>
+                <div class="placeholder-label">FLAME 3D Model</div>
+                <div class="placeholder-traits">
+                  <span class="placeholder-trait" style="background:rgba(141,85,36,0.15);color:#8d5524">Dark Skin</span>
+                  <span class="placeholder-trait" style="background:rgba(92,61,38,0.15);color:#5c3d26">Brown Hair</span>
+                  <span class="placeholder-trait" style="background:rgba(55,35,20,0.15);color:#373523">Dark Brown Eyes</span>
+                </div>
               </div>
+              <div class="comparison-label">3D FLAME Model &middot; Coming Soon</div>
             </div>
           </div>
-          <div class="gallery-meta">
-            <span class="gallery-id">SYNTH_000052</span>
-            <span class="gallery-sex">Male</span>
+          <div class="comparison-meta">
+            <span class="comparison-id">SYNTH_000052</span>
+            <div class="comparison-tags">
+              <span class="trait-tag">Dark Brown Eyes</span>
+              <span class="trait-tag">Brown Hair</span>
+              <span class="trait-tag">Dark Skin</span>
+              <span class="trait-tag">Long Face</span>
+              <span class="trait-tag">Square Jaw</span>
+              <span class="trait-tag">Wide Nose</span>
+              <span class="trait-tag">Curly Hair</span>
+              <span class="trait-tag">Full Lips</span>
+            </div>
           </div>
         </div>
 
-        <div class="gallery-card">
-          <div class="gallery-img-wrap">
-            <img src="images/SYNTH_000270.png" alt="SYNTH_000270 generated portrait" loading="lazy" />
-            <div class="gallery-overlay">
-              <div class="overlay-id">SYNTH_000270</div>
-              <div class="overlay-traits">
-                <span class="trait-tag">Blue Eyes</span>
-                <span class="trait-tag">Brown Hair</span>
-                <span class="trait-tag">Very Fair Skin</span>
-                <span class="trait-tag">Short Face</span>
-                <span class="trait-tag">Oval Face</span>
-                <span class="trait-tag">High Cheekbones</span>
-                <span class="trait-tag">Wavy Hair</span>
-                <span class="trait-tag">Thin Lips</span>
+        <div class="comparison-item">
+          <div class="comparison-pair">
+            <div class="comparison-half">
+              <img src="images/SYNTH_000270.png" alt="SYNTH_000270 2D portrait" loading="lazy" />
+              <div class="comparison-label">2D Portrait &middot; SD v1.5 + LoRA</div>
+            </div>
+            <div class="comparison-divider"></div>
+            <div class="comparison-half">
+              <div class="model-placeholder">
+                <div class="placeholder-icon">
+                  <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="32" cy="28" rx="14" ry="18" fill="currentColor" opacity="0.15"/>
+                    <ellipse cx="32" cy="28" rx="14" ry="18" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <ellipse cx="26.5" cy="25" rx="3" ry="3" fill="currentColor" opacity="0.4"/>
+                    <ellipse cx="37.5" cy="25" rx="3" ry="3" fill="currentColor" opacity="0.4"/>
+                    <path d="M28 35 Q32 37 36 35" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.5"/>
+                    <path d="M22 50 Q32 45 42 50" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.3"/>
+                  </svg>
+                </div>
+                <div class="placeholder-label">FLAME 3D Model</div>
+                <div class="placeholder-traits">
+                  <span class="placeholder-trait" style="background:rgba(241,194,125,0.2);color:#8a6020">Very Fair Skin</span>
+                  <span class="placeholder-trait" style="background:rgba(92,62,42,0.15);color:#5c3e2a">Brown Hair</span>
+                  <span class="placeholder-trait" style="background:rgba(88,125,168,0.15);color:#3a6fa8">Blue Eyes</span>
+                </div>
               </div>
+              <div class="comparison-label">3D FLAME Model &middot; Coming Soon</div>
             </div>
           </div>
-          <div class="gallery-meta">
-            <span class="gallery-id">SYNTH_000270</span>
-            <span class="gallery-sex">Male</span>
+          <div class="comparison-meta">
+            <span class="comparison-id">SYNTH_000270</span>
+            <div class="comparison-tags">
+              <span class="trait-tag">Blue Eyes</span>
+              <span class="trait-tag">Brown Hair</span>
+              <span class="trait-tag">Very Fair Skin</span>
+              <span class="trait-tag">Short Face</span>
+              <span class="trait-tag">Oval Face</span>
+              <span class="trait-tag">High Cheekbones</span>
+              <span class="trait-tag">Wavy Hair</span>
+              <span class="trait-tag">Thin Lips</span>
+            </div>
           </div>
         </div>
 
-        <div class="gallery-card">
-          <div class="gallery-img-wrap">
-            <img src="images/SYNTH_000601.png" alt="SYNTH_000601 generated portrait" loading="lazy" />
-            <div class="gallery-overlay">
-              <div class="overlay-id">SYNTH_000601</div>
-              <div class="overlay-traits">
-                <span class="trait-tag">Green Eyes</span>
-                <span class="trait-tag">Brown Hair</span>
-                <span class="trait-tag">Fair Skin</span>
-                <span class="trait-tag">Long Face</span>
-                <span class="trait-tag">Square Jaw</span>
-                <span class="trait-tag">Prominent Chin</span>
-                <span class="trait-tag">Wavy Hair</span>
-                <span class="trait-tag">Full Lips</span>
+        <div class="comparison-item">
+          <div class="comparison-pair">
+            <div class="comparison-half">
+              <img src="images/SYNTH_000601.png" alt="SYNTH_000601 2D portrait" loading="lazy" />
+              <div class="comparison-label">2D Portrait &middot; SD v1.5 + LoRA</div>
+            </div>
+            <div class="comparison-divider"></div>
+            <div class="comparison-half">
+              <div class="model-placeholder">
+                <div class="placeholder-icon">
+                  <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="32" cy="29" rx="15" ry="21" fill="currentColor" opacity="0.15"/>
+                    <ellipse cx="32" cy="29" rx="15" ry="21" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <ellipse cx="26" cy="26" rx="3" ry="3.5" fill="currentColor" opacity="0.4"/>
+                    <ellipse cx="38" cy="26" rx="3" ry="3.5" fill="currentColor" opacity="0.4"/>
+                    <path d="M27 36 Q32 39 37 36" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.5"/>
+                    <path d="M20 50 Q32 44 44 50" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.3"/>
+                  </svg>
+                </div>
+                <div class="placeholder-label">FLAME 3D Model</div>
+                <div class="placeholder-traits">
+                  <span class="placeholder-trait" style="background:rgba(224,172,105,0.2);color:#7a5a20">Fair Skin</span>
+                  <span class="placeholder-trait" style="background:rgba(92,62,42,0.15);color:#5c3e2a">Brown Hair</span>
+                  <span class="placeholder-trait" style="background:rgba(92,122,84,0.15);color:#3a6a30">Green Eyes</span>
+                </div>
               </div>
+              <div class="comparison-label">3D FLAME Model &middot; Coming Soon</div>
             </div>
           </div>
-          <div class="gallery-meta">
-            <span class="gallery-id">SYNTH_000601</span>
-            <span class="gallery-sex">Male</span>
+          <div class="comparison-meta">
+            <span class="comparison-id">SYNTH_000601</span>
+            <div class="comparison-tags">
+              <span class="trait-tag">Green Eyes</span>
+              <span class="trait-tag">Brown Hair</span>
+              <span class="trait-tag">Fair Skin</span>
+              <span class="trait-tag">Long Face</span>
+              <span class="trait-tag">Square Jaw</span>
+              <span class="trait-tag">Prominent Chin</span>
+              <span class="trait-tag">Wavy Hair</span>
+              <span class="trait-tag">Full Lips</span>
+            </div>
           </div>
         </div>
 
-        <div class="gallery-card">
-          <div class="gallery-img-wrap">
-            <img src="images/SYNTH_001977.png" alt="SYNTH_001977 generated portrait" loading="lazy" />
-            <div class="gallery-overlay">
-              <div class="overlay-id">SYNTH_001977</div>
-              <div class="overlay-traits">
-                <span class="trait-tag">Green Eyes</span>
-                <span class="trait-tag">Brown Hair</span>
-                <span class="trait-tag">Very Fair Skin</span>
-                <span class="trait-tag">Short Face</span>
-                <span class="trait-tag">Square Jaw</span>
-                <span class="trait-tag">Straight Hair</span>
-                <span class="trait-tag">Fine Hair</span>
-                <span class="trait-tag">Full Lips</span>
+        <div class="comparison-item">
+          <div class="comparison-pair">
+            <div class="comparison-half">
+              <img src="images/SYNTH_001977.png" alt="SYNTH_001977 2D portrait" loading="lazy" />
+              <div class="comparison-label">2D Portrait &middot; SD v1.5 + LoRA</div>
+            </div>
+            <div class="comparison-divider"></div>
+            <div class="comparison-half">
+              <div class="model-placeholder">
+                <div class="placeholder-icon">
+                  <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="32" cy="27" rx="14" ry="18" fill="currentColor" opacity="0.15"/>
+                    <ellipse cx="32" cy="27" rx="14" ry="18" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <ellipse cx="26.5" cy="24" rx="3" ry="3" fill="currentColor" opacity="0.4"/>
+                    <ellipse cx="37.5" cy="24" rx="3" ry="3" fill="currentColor" opacity="0.4"/>
+                    <path d="M28 34 Q32 36 36 34" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.5"/>
+                    <path d="M22 50 Q32 45 42 50" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.3"/>
+                  </svg>
+                </div>
+                <div class="placeholder-label">FLAME 3D Model</div>
+                <div class="placeholder-traits">
+                  <span class="placeholder-trait" style="background:rgba(241,194,125,0.2);color:#8a6020">Very Fair Skin</span>
+                  <span class="placeholder-trait" style="background:rgba(92,62,42,0.15);color:#5c3e2a">Brown Hair</span>
+                  <span class="placeholder-trait" style="background:rgba(92,122,84,0.15);color:#3a6a30">Green Eyes</span>
+                </div>
               </div>
+              <div class="comparison-label">3D FLAME Model &middot; Coming Soon</div>
             </div>
           </div>
-          <div class="gallery-meta">
-            <span class="gallery-id">SYNTH_001977</span>
-            <span class="gallery-sex">Male</span>
+          <div class="comparison-meta">
+            <span class="comparison-id">SYNTH_001977</span>
+            <div class="comparison-tags">
+              <span class="trait-tag">Green Eyes</span>
+              <span class="trait-tag">Brown Hair</span>
+              <span class="trait-tag">Very Fair Skin</span>
+              <span class="trait-tag">Short Face</span>
+              <span class="trait-tag">Square Jaw</span>
+              <span class="trait-tag">Straight Hair</span>
+              <span class="trait-tag">Fine Hair</span>
+              <span class="trait-tag">Full Lips</span>
+            </div>
           </div>
         </div>
 
-        <div class="gallery-card">
-          <div class="gallery-img-wrap">
-            <img src="images/SYNTH_002246.png" alt="SYNTH_002246 generated portrait" loading="lazy" />
-            <div class="gallery-overlay">
-              <div class="overlay-id">SYNTH_002246</div>
-              <div class="overlay-traits">
-                <span class="trait-tag">Green Eyes</span>
-                <span class="trait-tag">Brown Hair</span>
-                <span class="trait-tag">Very Fair Skin</span>
-                <span class="trait-tag">Oval Face</span>
-                <span class="trait-tag">Prominent Chin</span>
-                <span class="trait-tag">Wavy Hair</span>
-                <span class="trait-tag">Hooded Eyes</span>
-                <span class="trait-tag">Full Lips</span>
+        <div class="comparison-item">
+          <div class="comparison-pair">
+            <div class="comparison-half">
+              <img src="images/SYNTH_002246.png" alt="SYNTH_002246 2D portrait" loading="lazy" />
+              <div class="comparison-label">2D Portrait &middot; SD v1.5 + LoRA</div>
+            </div>
+            <div class="comparison-divider"></div>
+            <div class="comparison-half">
+              <div class="model-placeholder">
+                <div class="placeholder-icon">
+                  <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="32" cy="27" rx="14" ry="17" fill="currentColor" opacity="0.15"/>
+                    <ellipse cx="32" cy="27" rx="14" ry="17" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <ellipse cx="26.5" cy="24" rx="3" ry="3" fill="currentColor" opacity="0.4"/>
+                    <ellipse cx="37.5" cy="24" rx="3" ry="3" fill="currentColor" opacity="0.4"/>
+                    <path d="M28 33 Q32 36 36 33" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.5"/>
+                    <path d="M22 50 Q32 45 42 50" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.3"/>
+                  </svg>
+                </div>
+                <div class="placeholder-label">FLAME 3D Model</div>
+                <div class="placeholder-traits">
+                  <span class="placeholder-trait" style="background:rgba(241,194,125,0.2);color:#8a6020">Very Fair Skin</span>
+                  <span class="placeholder-trait" style="background:rgba(92,62,42,0.15);color:#5c3e2a">Brown Hair</span>
+                  <span class="placeholder-trait" style="background:rgba(92,122,84,0.15);color:#3a6a30">Green Eyes</span>
+                </div>
               </div>
+              <div class="comparison-label">3D FLAME Model &middot; Coming Soon</div>
             </div>
           </div>
-          <div class="gallery-meta">
-            <span class="gallery-id">SYNTH_002246</span>
-            <span class="gallery-sex">Male</span>
+          <div class="comparison-meta">
+            <span class="comparison-id">SYNTH_002246</span>
+            <div class="comparison-tags">
+              <span class="trait-tag">Green Eyes</span>
+              <span class="trait-tag">Brown Hair</span>
+              <span class="trait-tag">Very Fair Skin</span>
+              <span class="trait-tag">Oval Face</span>
+              <span class="trait-tag">Prominent Chin</span>
+              <span class="trait-tag">Wavy Hair</span>
+              <span class="trait-tag">Hooded Eyes</span>
+              <span class="trait-tag">Full Lips</span>
+            </div>
           </div>
         </div>
 
-      </div><!-- /gallery -->
+      </div><!-- /comparison-list -->
 
       <!-- PHENOTYPE BREAKDOWN -->
       <div class="pheno-section">

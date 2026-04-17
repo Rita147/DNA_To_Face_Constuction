@@ -515,7 +515,7 @@ a {
 }
 
 /* ─────────────────────────────────────────
-   FACE GALLERY
+   COMPARISON GALLERY
 ───────────────────────────────────────── */
 .gallery-label {
   margin-bottom: 28px;
@@ -534,100 +534,130 @@ a {
   color: var(--text-mid);
 }
 
-.gallery {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 16px;
+.comparison-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
   margin-bottom: 72px;
 }
 
-.gallery-card {
-  border-radius: var(--radius);
-  overflow: hidden;
-  border: 1px solid var(--border);
+.comparison-item {
   background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
-.gallery-img-wrap {
-  position: relative;
-  aspect-ratio: 3/4;
-  overflow: hidden;
+.comparison-pair {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  align-items: stretch;
+}
+
+.comparison-half {
+  display: flex;
+  flex-direction: column;
+}
+
+.comparison-half img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+}
+
+.comparison-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-soft);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
   background: var(--bg-tint);
 }
 
-.gallery-img-wrap img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.4s ease;
+.comparison-divider {
+  background: var(--border);
+  width: 1px;
 }
 
-.gallery-card:hover .gallery-img-wrap img {
-  transform: scale(1.04);
-}
-
-.gallery-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(26,25,23,0.88) 0%, rgba(26,25,23,0.2) 55%, transparent 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
+.comparison-meta {
   display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 16px;
-  gap: 6px;
-}
-
-.gallery-card:hover .gallery-overlay {
-  opacity: 1;
-}
-
-.overlay-id {
-  font-size: 11px;
-  font-family: 'SF Mono', 'Fira Code', monospace;
-  color: rgba(255,255,255,0.6);
-  letter-spacing: 0.06em;
-}
-
-.overlay-traits {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.trait-tag {
-  font-size: 10px;
-  font-weight: 500;
-  padding: 3px 8px;
-  border-radius: 100px;
-  background: rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.9);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-.gallery-meta {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 12px 14px;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
 }
 
-.gallery-id {
+.comparison-id {
   font-size: 11px;
   font-family: 'SF Mono', 'Fira Code', monospace;
   color: var(--text-soft);
+  white-space: nowrap;
 }
 
-.gallery-sex {
+.comparison-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.trait-tag {
   font-size: 11px;
   font-weight: 500;
-  color: var(--lavender-dark);
-  background: var(--lavender-light);
+  padding: 3px 10px;
   border-radius: 100px;
-  padding: 2px 10px;
+  background: var(--lavender-light);
+  color: var(--lavender-dark);
+}
+
+/* 3D placeholder */
+.model-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: linear-gradient(135deg, var(--lavender-light) 0%, var(--blue-light) 100%);
+  aspect-ratio: 1 / 1;
+  color: var(--lavender-dark);
+  padding: 24px;
+}
+
+.placeholder-icon {
+  width: 72px;
+  height: 72px;
+  opacity: 0.7;
+}
+
+.placeholder-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.placeholder-label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--lavender-dark);
+}
+
+.placeholder-traits {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.placeholder-trait {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 100px;
 }
 
 /* ─────────────────────────────────────────
@@ -743,8 +773,13 @@ a {
    RESPONSIVE
 ───────────────────────────────────────── */
 @media (max-width: 900px) {
-  .gallery {
-    grid-template-columns: repeat(3, 1fr);
+  .comparison-pair {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1px auto;
+  }
+  .comparison-divider {
+    width: 100%;
+    height: 1px;
   }
 }
 
@@ -770,8 +805,9 @@ a {
     font-size: 22px;
   }
 
-  .gallery {
-    grid-template-columns: repeat(2, 1fr);
+  .comparison-meta {
+    padding: 12px 16px;
+    gap: 10px;
   }
 
   .pheno-section {
