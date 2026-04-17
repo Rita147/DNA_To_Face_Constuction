@@ -248,11 +248,34 @@ class PhenotypeToPromptConverter:
     
     @staticmethod
     def create_negative_prompt() -> str:
-        """Create negative prompt (what to avoid)"""
-        return ("cartoon, anime, illustration, painting, 3d render, drawing, "
-                "low quality, blurry, deformed, disfigured, bad anatomy, "
-                "extra limbs, extra fingers, text, watermark, signature, "
-                "distorted face, multiple people")
+        """Create negative prompt for image generation.
+
+        Expanded from the best-performing HQ v2 inference run (celeba_hq_lora step-8000).
+        The original short prompt produced anatomy and eye-symmetry artefacts;
+        this version adds explicit anatomy, skin, and quality suppressors that
+        were identified as the main failure modes during evaluation.
+        """
+        return (
+            # anatomy / hand / face structure failures
+            "deformed, ugly, blurry, bad anatomy, bad hands, extra fingers, missing fingers, "
+            "fused fingers, too many fingers, mutated hands, poorly drawn hands, poorly drawn face, "
+            "mutation, disfigured, extra limbs, cloned face, malformed limbs, missing arms, "
+            "missing legs, extra arms, extra legs, "
+            # image quality / framing
+            "low quality, worst quality, jpeg artifacts, watermark, signature, text, "
+            "cropped, out of frame, duplicate, "
+            # proportions / facial symmetry — common LoRA failure modes
+            "morbid, gross proportions, long neck, asymmetrical eyes, crossed eyes, lazy eye, "
+            # skin artefacts
+            "skin blemishes, acne, "
+            # exposure
+            "overexposed, underexposed, "
+            # style leakage
+            "cartoon, anime, illustration, painting, drawing, sketch, 3d render, cgi, "
+            "plastic skin, doll-like, "
+            # multi-person / off-topic
+            "distorted face, multiple people"
+        )
 
 # ============================================================================
 # EXTENDED PHENOTYPE (from previous artifact)
