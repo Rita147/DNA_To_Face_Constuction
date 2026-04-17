@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Facial Reconstruction Using DNA Sequencing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <span class="nav-logo">DNA → Face</span>
+      <ul class="nav-links">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#pipeline">Pipeline</a></li>
+        <li><a href="#results">Results</a></li>
+        <li><a href="#methods">Methods</a></li>
+        <li><a href="#team">Team</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="hero-badge">BBM479 · Hacettepe University · 2026</div>
+    <h1 class="hero-title">Facial Reconstruction<br /><em>Using DNA Sequencing</em></h1>
+    <p class="hero-sub">
+      An end-to-end synthetic pipeline that bridges genomic data with
+      photorealistic human face generation — from SNP genotypes to Stable Diffusion imagery.
+    </p>
+    <div class="hero-pills">
+      <span class="pill pill-blue">Bioinformatics</span>
+      <span class="pill pill-lavender">Generative AI</span>
+      <span class="pill pill-rose">Population Genetics</span>
+      <span class="pill pill-mint">Computer Vision</span>
+    </div>
+    <div class="hero-scroll-hint">scroll to explore ↓</div>
+  </header>
+
+  <!-- OVERVIEW -->
+  <section class="section" id="overview">
+    <div class="container">
+      <div class="section-label">Project Overview</div>
+      <h2 class="section-title">From DNA to a Human Face</h2>
+      <p class="section-desc">
+        This project constructs a fully synthetic, end-to-end pipeline that translates
+        genetic sequencing data into visually realistic human portraits. Starting from
+        simulated SNP genotypes across 50+ genes, the system predicts 29 distinct facial
+        phenotype traits and converts them into detailed generation prompts fed to a
+        fine-tuned Stable Diffusion model.
+      </p>
+
+      <div class="cards-grid">
+        <div class="card card-blue">
+          <div class="card-icon">🧬</div>
+          <h3>50+ Genes</h3>
+          <p>SNP database covering genes linked to eye colour, face shape, skin tone, hair texture, and more.</p>
+        </div>
+        <div class="card card-lavender">
+          <div class="card-icon">🔬</div>
+          <h3>29 Phenotype Traits</h3>
+          <p>Weighted genotype scoring predicts a rich facial feature vector from raw sequencing data.</p>
+        </div>
+        <div class="card card-rose">
+          <div class="card-icon">🖼️</div>
+          <h3>Stable Diffusion</h3>
+          <p>CelebA-fine-tuned LoRA model generates photorealistic portraits from phenotype-derived prompts.</p>
+        </div>
+        <div class="card card-mint">
+          <div class="card-icon">⚗️</div>
+          <h3>Realistic Sequencing</h3>
+          <p>Read simulation with configurable coverage depth, read length, and sequencing error rates.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PIPELINE -->
+  <section class="section section-tinted" id="pipeline">
+    <div class="container">
+      <div class="section-label">How It Works</div>
+      <h2 class="section-title">The Five-Stage Pipeline</h2>
+      <p class="section-desc">
+        Each stage is modular and independently testable. The pipeline can be run
+        end-to-end with a single command or stage-by-stage for inspection and analysis.
+      </p>
+
+      <div class="pipeline">
+        <div class="pipeline-step">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <h3>Genotype Simulation</h3>
+            <p>Synthetic SNP genotypes are generated for a population sample across 50+ trait-linked loci, respecting realistic allele frequency distributions.</p>
+            <span class="step-file">dataset_builder.py</span>
+          </div>
+        </div>
+
+        <div class="pipeline-arrow">↓</div>
+
+        <div class="pipeline-step">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <h3>Sequencing Read Simulation</h3>
+            <p>Raw sequencing reads are synthesised from the simulated genomes with configurable coverage, read length, and per-base sequencing error rates.</p>
+            <span class="step-file">simulate_targeted_reads.py</span>
+          </div>
+        </div>
+
+        <div class="pipeline-arrow">↓</div>
+
+        <div class="pipeline-step">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <h3>Genotype Calling & VCF Generation</h3>
+            <p>Allele counts from reads are used to call SNP genotypes. Accuracy is tracked against ground-truth genotypes and results are exported as VCF files.</p>
+            <span class="step-file">call_genotypes_from_reads.py</span>
+          </div>
+        </div>
+
+        <div class="pipeline-arrow">↓</div>
+
+        <div class="pipeline-step">
+          <div class="step-num">04</div>
+          <div class="step-body">
+            <h3>Phenotype Prediction</h3>
+            <p>Weighted SNP scoring maps genotypes to a 29-trait phenotype vector covering eye colour, facial geometry, skin features, hair properties, and ear morphology.</p>
+            <span class="step-file">dataset_builder.py → PhenotypePredictor</span>
+          </div>
+        </div>
+
+        <div class="pipeline-arrow">↓</div>
+
+        <div class="pipeline-step">
+          <div class="step-num">05</div>
+          <div class="step-body">
+            <h3>Face Image Generation</h3>
+            <p>Phenotype vectors are converted to rich text prompts and fed to Stable Diffusion v1.5 with a CelebA LoRA fine-tune, producing photorealistic synthetic portraits.</p>
+            <span class="step-file">generate_face_images.py</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="section" id="results">
+    <div class="container">
+      <div class="section-label">Pipeline Results</div>
+      <h2 class="section-title">What We Produced</h2>
+      <p class="section-desc">
+        The pipeline was run on a synthetic cohort of 10 samples across 52 SNP loci,
+        achieving perfect genotype calling accuracy before generating photorealistic portrait images.
+      </p>
+
+      <!-- STATS ROW -->
+      <div class="stats-row">
+        <div class="stat-block">
+          <div class="stat-num">100%</div>
+          <div class="stat-label">Genotype Calling Accuracy</div>
+          <div class="stat-sub">520 calls · 0 missing</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-num">52</div>
+          <div class="stat-label">SNP Loci Targeted</div>
+          <div class="stat-sub">12× mean read depth</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-num">29</div>
+          <div class="stat-label">Facial Traits Predicted</div>
+          <div class="stat-sub">per sample phenotype vector</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-num">5</div>
+          <div class="stat-label">Portraits Generated</div>
+          <div class="stat-sub">SD v1.5 + CelebA LoRA</div>
+        </div>
+      </div>
+
+      <!-- FACE GALLERY -->
+      <div class="gallery-label">
+        <h3>Generated Synthetic Portraits</h3>
+        <p>Each portrait was generated from a unique DNA-derived phenotype vector. Hover a card to see the traits used.</p>
+      </div>
+
+      <div class="gallery">
+
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="images/SYNTH_000052.png" alt="SYNTH_000052 generated portrait" loading="lazy" />
+            <div class="gallery-overlay">
+              <div class="overlay-id">SYNTH_000052</div>
+              <div class="overlay-traits">
+                <span class="trait-tag">Dark Brown Eyes</span>
+                <span class="trait-tag">Brown Hair</span>
+                <span class="trait-tag">Dark Skin</span>
+                <span class="trait-tag">Long Face</span>
+                <span class="trait-tag">Square Jaw</span>
+                <span class="trait-tag">Wide Nose</span>
+                <span class="trait-tag">Curly Hair</span>
+                <span class="trait-tag">Widow's Peak</span>
+                <span class="trait-tag">Almond Eyes</span>
+                <span class="trait-tag">Full Lips</span>
+              </div>
+            </div>
+          </div>
+          <div class="gallery-meta">
+            <span class="gallery-id">SYNTH_000052</span>
+            <span class="gallery-sex">Male</span>
+          </div>
+        </div>
+
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="images/SYNTH_000270.png" alt="SYNTH_000270 generated portrait" loading="lazy" />
+            <div class="gallery-overlay">
+              <div class="overlay-id">SYNTH_000270</div>
+              <div class="overlay-traits">
+                <span class="trait-tag">Blue Eyes</span>
+                <span class="trait-tag">Brown Hair</span>
+                <span class="trait-tag">Very Fair Skin</span>
+                <span class="trait-tag">Short Face</span>
+                <span class="trait-tag">Oval Face</span>
+                <span class="trait-tag">High Cheekbones</span>
+                <span class="trait-tag">Wavy Hair</span>
+                <span class="trait-tag">Thin Lips</span>
+                <span class="trait-tag">Light Freckles</span>
+                <span class="trait-tag">Wide-Set Eyes</span>
+              </div>
+            </div>
+          </div>
+          <div class="gallery-meta">
+            <span class="gallery-id">SYNTH_000270</span>
+            <span class="gallery-sex">Male</span>
+          </div>
+        </div>
+
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="images/SYNTH_000601.png" alt="SYNTH_000601 generated portrait" loading="lazy" />
+            <div class="gallery-overlay">
+              <div class="overlay-id">SYNTH_000601</div>
+              <div class="overlay-traits">
+                <span class="trait-tag">Green Eyes</span>
+                <span class="trait-tag">Brown Hair</span>
+                <span class="trait-tag">Fair Skin</span>
+                <span class="trait-tag">Long Face</span>
+                <span class="trait-tag">Square Jaw</span>
+                <span class="trait-tag">Prominent Chin</span>
+                <span class="trait-tag">Wavy Hair</span>
+                <span class="trait-tag">Widow's Peak</span>
+                <span class="trait-tag">Full Lips</span>
+                <span class="trait-tag">Large Eyes</span>
+              </div>
+            </div>
+          </div>
+          <div class="gallery-meta">
+            <span class="gallery-id">SYNTH_000601</span>
+            <span class="gallery-sex">Male</span>
+          </div>
+        </div>
+
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="images/SYNTH_001977.png" alt="SYNTH_001977 generated portrait" loading="lazy" />
+            <div class="gallery-overlay">
+              <div class="overlay-id">SYNTH_001977</div>
+              <div class="overlay-traits">
+                <span class="trait-tag">Green Eyes</span>
+                <span class="trait-tag">Brown Hair</span>
+                <span class="trait-tag">Very Fair Skin</span>
+                <span class="trait-tag">Short Face</span>
+                <span class="trait-tag">Square Jaw</span>
+                <span class="trait-tag">Straight Hair</span>
+                <span class="trait-tag">Fine Hair</span>
+                <span class="trait-tag">Light Freckles</span>
+                <span class="trait-tag">Full Lips</span>
+                <span class="trait-tag">Large Round Eyes</span>
+              </div>
+            </div>
+          </div>
+          <div class="gallery-meta">
+            <span class="gallery-id">SYNTH_001977</span>
+            <span class="gallery-sex">Male</span>
+          </div>
+        </div>
+
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="images/SYNTH_002246.png" alt="SYNTH_002246 generated portrait" loading="lazy" />
+            <div class="gallery-overlay">
+              <div class="overlay-id">SYNTH_002246</div>
+              <div class="overlay-traits">
+                <span class="trait-tag">Green Eyes</span>
+                <span class="trait-tag">Brown Hair</span>
+                <span class="trait-tag">Very Fair Skin</span>
+                <span class="trait-tag">Short Face</span>
+                <span class="trait-tag">Oval Face</span>
+                <span class="trait-tag">Prominent Chin</span>
+                <span class="trait-tag">Wavy Hair</span>
+                <span class="trait-tag">Hooded Eyes</span>
+                <span class="trait-tag">Full Lips</span>
+                <span class="trait-tag">Light Freckles</span>
+              </div>
+            </div>
+          </div>
+          <div class="gallery-meta">
+            <span class="gallery-id">SYNTH_002246</span>
+            <span class="gallery-sex">Male</span>
+          </div>
+        </div>
+
+      </div><!-- /gallery -->
+
+      <!-- PHENOTYPE BREAKDOWN -->
+      <div class="pheno-section">
+        <div class="pheno-header">
+          <h3>Sample Phenotype Breakdown</h3>
+          <p>Predicted traits for <strong>SYNTH_000052</strong> — each trait derived from weighted SNP scoring across 52 loci.</p>
+        </div>
+        <div class="pheno-grid">
+          <div class="pheno-group">
+            <div class="pheno-group-label">Eyes</div>
+            <div class="pheno-row"><span class="pheno-key">Colour</span><span class="pheno-val">Dark Brown</span></div>
+            <div class="pheno-row"><span class="pheno-key">Shape</span><span class="pheno-val">Almond</span></div>
+            <div class="pheno-row"><span class="pheno-key">Size</span><span class="pheno-val">Medium</span></div>
+            <div class="pheno-row"><span class="pheno-key">Distance</span><span class="pheno-val">Close-Set</span></div>
+          </div>
+          <div class="pheno-group">
+            <div class="pheno-group-label">Face Structure</div>
+            <div class="pheno-row"><span class="pheno-key">Width</span><span class="pheno-val">Wide</span></div>
+            <div class="pheno-row"><span class="pheno-key">Height</span><span class="pheno-val">Long</span></div>
+            <div class="pheno-row"><span class="pheno-key">Jaw</span><span class="pheno-val">Square</span></div>
+            <div class="pheno-row"><span class="pheno-key">Chin</span><span class="pheno-val">Receding</span></div>
+            <div class="pheno-row"><span class="pheno-key">Cheekbones</span><span class="pheno-val">Medium</span></div>
+          </div>
+          <div class="pheno-group">
+            <div class="pheno-group-label">Nose &amp; Mouth</div>
+            <div class="pheno-row"><span class="pheno-key">Nose Size</span><span class="pheno-val">Medium</span></div>
+            <div class="pheno-row"><span class="pheno-key">Nose Width</span><span class="pheno-val">Wide</span></div>
+            <div class="pheno-row"><span class="pheno-key">Nostrils</span><span class="pheno-val">Wide</span></div>
+            <div class="pheno-row"><span class="pheno-key">Lip Thickness</span><span class="pheno-val">Full</span></div>
+            <div class="pheno-row"><span class="pheno-key">Mouth Width</span><span class="pheno-val">Narrow</span></div>
+          </div>
+          <div class="pheno-group">
+            <div class="pheno-group-label">Hair &amp; Skin</div>
+            <div class="pheno-row"><span class="pheno-key">Hair Colour</span><span class="pheno-val">Brown</span></div>
+            <div class="pheno-row"><span class="pheno-key">Hair Texture</span><span class="pheno-val">Curly</span></div>
+            <div class="pheno-row"><span class="pheno-key">Hairline</span><span class="pheno-val">Widow's Peak</span></div>
+            <div class="pheno-row"><span class="pheno-key">Skin Tone</span><span class="pheno-val">Dark</span></div>
+            <div class="pheno-row"><span class="pheno-key">Freckling</span><span class="pheno-val">Light</span></div>
+          </div>
+        </div>
+
+        <!-- CONFIDENCE BAR -->
+        <div class="confidence-row">
+          <span class="confidence-label">Overall Prediction Confidence</span>
+          <div class="confidence-bar-wrap">
+            <div class="confidence-bar" style="width: 84%"></div>
+          </div>
+          <span class="confidence-pct">84%</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- METHODS -->
+  <section class="section" id="methods">
+    <div class="container">
+      <div class="section-label">Technical Methods</div>
+      <h2 class="section-title">Key Technologies &amp; Approaches</h2>
+
+      <div class="methods-grid">
+        <div class="method-block">
+          <h3>SNP-to-Phenotype Scoring</h3>
+          <p>
+            Each SNP contributes a weighted score to one or more phenotype axes. Homozygous
+            alternate alleles receive full weight; heterozygous calls receive half weight.
+            Aggregate scores are then normalised and mapped to discrete or continuous phenotype
+            categories using thresholds tuned to population-level expectations.
+          </p>
+        </div>
+
+        <div class="method-block">
+          <h3>Sequencing Error Modelling</h3>
+          <p>
+            The read simulator introduces substitution errors at configurable per-base error
+            rates, and models realistic coverage distributions across targeted loci.
+            The genotype caller then reconstructs alleles from read pileups, reporting
+            heterozygous calls when allele balance sits in a configurable range.
+          </p>
+        </div>
+
+        <div class="method-block">
+          <h3>LoRA Fine-Tuning (CelebA)</h3>
+          <p>
+            A Low-Rank Adaptation (LoRA) layer is applied to Stable Diffusion v1.5 and
+            fine-tuned on the CelebA dataset. This steers generation toward realistic facial
+            structure while retaining the model's broad generalisation ability, allowing
+            phenotype-derived prompts to produce consistent, high-quality portraits.
+          </p>
+        </div>
+
+        <div class="method-block">
+          <h3>3D Hair Asset Mapping</h3>
+          <p>
+            Hair phenotypes (colour, texture, thickness, hairline shape) are mapped to
+            material parameters — melanin concentration, redness, density multipliers —
+            for use in 3D rendering pipelines. A template catalogue covers 18 distinct
+            hair-asset combinations.
+          </p>
+        </div>
+
+        <div class="method-block">
+          <h3>Prompt Engineering</h3>
+          <p>
+            A structured prompt converter translates the 29-trait phenotype vector into
+            detailed positive and negative diffusion prompts. Positive prompts encode
+            specific trait descriptions; negative prompts suppress common artefacts and
+            unrealistic features to improve output fidelity.
+          </p>
+        </div>
+
+        <div class="method-block">
+          <h3>Synthetic Dataset Generation</h3>
+          <p>
+            Because real-world DNA-to-face paired datasets are scarce and privacy-sensitive,
+            the pipeline generates fully synthetic paired data — genotypes, phenotypes, and
+            portrait images — at scale, enabling downstream model training without
+            privacy constraints.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TECH STACK -->
+  <section class="section section-tinted">
+    <div class="container">
+      <div class="section-label">Technology Stack</div>
+      <h2 class="section-title">Built With</h2>
+      <div class="tech-grid">
+        <div class="tech-tag">Python 3.11</div>
+        <div class="tech-tag">PyTorch</div>
+        <div class="tech-tag">CUDA 12.1</div>
+        <div class="tech-tag">Stable Diffusion v1.5</div>
+        <div class="tech-tag">Diffusers (HuggingFace)</div>
+        <div class="tech-tag">LoRA</div>
+        <div class="tech-tag">Transformers</div>
+        <div class="tech-tag">Safetensors</div>
+        <div class="tech-tag">Pandas</div>
+        <div class="tech-tag">NumPy</div>
+        <div class="tech-tag">VCF Format</div>
+        <div class="tech-tag">Conda</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEAM -->
+  <section class="section" id="team">
+    <div class="container">
+      <div class="section-label">The Team</div>
+      <h2 class="section-title">Group Members</h2>
+
+      <div class="team-grid">
+        <div class="team-card">
+          <div class="team-avatar" style="background: var(--blue-light);">RS</div>
+          <h3>Rita Sulaiman</h3>
+          <p class="team-id">2210765051</p>
+        </div>
+        <div class="team-card">
+          <div class="team-avatar" style="background: var(--lavender-light);">ZB</div>
+          <h3>Zharasbek Bimagambetov</h3>
+          <p class="team-id">2210356185</p>
+        </div>
+        <div class="team-card">
+          <div class="team-avatar" style="background: var(--rose-light);">ZY</div>
+          <h3>Zeynep Yıldız</h3>
+          <p class="team-id">2210765033</p>
+        </div>
+      </div>
+
+      <div class="supervisor-block">
+        <span class="supervisor-label">Supervised by</span>
+        <span class="supervisor-name">Prof. Dr. Nazlı İkizler Cinbiş</span>
+        <span class="supervisor-dept">Computer Engineering Department · Hacettepe University</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <span>Hacettepe University · Computer Engineering · BBM479</span>
+      <span>Facial Reconstruction Using DNA Sequencing · 2026</span>
+    </div>
+  </footer>
+
+</body>
+</html>

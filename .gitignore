@@ -1,17 +1,32 @@
-# ignore datasets
-data/*
-!data/hirisplex_full_41snps.csv
+# ── Generated data ────────────────────────────────────────────────────────────
+data/
 
-# ignore checkpoints
+# ── Model checkpoints / weights ───────────────────────────────────────────────
 checkpoints/
+# Intermediate LoRA step checkpoints — only keep the final safetensors files
+assets/lora/*-step*.safetensors
+# Exception: the best HQ v2 checkpoint is intentionally tracked
+!assets/lora/hq_v2/celeba_hq_lora-step00008000.safetensors
 
-# python ignores
+# ── Python build artefacts ────────────────────────────────────────────────────
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
 
-# notebooks cache
+# ── Jupyter ───────────────────────────────────────────────────────────────────
 .ipynb_checkpoints/
 
-# virtual env
+# ── Virtual environments ──────────────────────────────────────────────────────
 venv/
 .env/
+.conda/
+
+# ── OS / editor noise ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp

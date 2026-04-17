@@ -2,7 +2,7 @@ from typing import Dict, List, Tuple
 
 import torch
 
-from measurement_definitions import MeasurementDef
+from .measurement_definitions import MeasurementDef
 
 
 def validate_pair(pair: Tuple[int, int], num_landmarks: int) -> bool:

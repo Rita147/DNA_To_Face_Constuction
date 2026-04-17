@@ -7,7 +7,7 @@ import trimesh.transformations as transformations
 
 from pathlib import Path
 
-HAIR_ASSET_PATH = Path(__file__).resolve().parent / "assets" / "hair" / "wolf_haircut.glb"
+HAIR_ASSET_PATH = Path(__file__).resolve().parents[4] / "assets" / "hair" / "wolf_haircut.glb"
 
 EXACT_SKIN_TONE_RGB: Dict[str, np.ndarray] = {
     "very_light": np.array([241, 194, 125], dtype=np.float32) / 255.0,  # #f1c27d
