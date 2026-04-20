@@ -164,7 +164,7 @@
       <div class="section-label">Pipeline Results</div>
       <h2 class="section-title">What We Produced</h2>
       <p class="section-desc">
-        The pipeline was run on a synthetic cohort of 10 samples across 52 SNP loci, achieving
+        The pipeline was run on a synthetic cohort of 8 samples across 52 SNP loci, achieving
         perfect genotype calling accuracy and producing both a photorealistic 2D portrait and a
         parametric 3D FLAME face model for each individual.
       </p>
@@ -187,7 +187,7 @@
           <div class="stat-sub">per sample phenotype vector</div>
         </div>
         <div class="stat-block">
-          <div class="stat-num">5</div>
+          <div class="stat-num">4</div>
           <div class="stat-label">2D + 3D Face Pairs</div>
           <div class="stat-sub">SD portrait + FLAME model</div>
         </div>
@@ -306,7 +306,6 @@
               <span class="trait-tag">Short Face</span>
               <span class="trait-tag">Square Jaw</span>
               <span class="trait-tag">Straight Hair</span>
-              <span class="trait-tag">Fine Hair</span>
               <span class="trait-tag">Full Lips</span>
               <span class="trait-tag">Some Freckles</span>
             </div>
@@ -409,12 +408,12 @@
         </div>
 
         <div class="method-block">
-          <h3>3D Hair Asset Mapping</h3>
+          <h3>3D FLAME Parameter Optimisation</h3>
           <p>
-            Hair phenotypes (colour, texture, thickness, hairline shape) are mapped to
-            material parameters — melanin concentration, redness, density multipliers —
-            for use in 3D rendering pipelines. A template catalogue covers 18 distinct
-            hair-asset combinations.
+            Predicted phenotype measurements are converted into target facial proportions and used
+            to optimise FLAME shape parameters iteratively. This allows the system to reconstruct
+            a consistent 3D face geometry from DNA-derived traits rather than relying only on
+            image generation.
           </p>
         </div>
 
