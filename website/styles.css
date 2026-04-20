@@ -402,18 +402,23 @@ a {
   text-align: center;
 }
 
+
 .team-avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
+  width: 120px;          /* Genişliği 64'ten 120'ye çıkardık */
+  height: 120px;         /* Yüksekliği 64'ten 120'ye çıkardık */
+  border-radius: 50%;    
+  overflow: hidden;      
+  margin: 0 auto 1rem;   
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-mid);
-  margin: 0 auto 20px;
-  letter-spacing: 0.02em;
+  border: 2px solid var(--border); /* İstersen etrafına ince bir çizgi ekler */
+}
+
+.member-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;     
 }
 
 .team-card h3 {
