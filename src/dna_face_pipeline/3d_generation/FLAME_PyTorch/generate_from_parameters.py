@@ -32,7 +32,13 @@ from appearance_scene import (
     build_eye_meshes_from_landmarks,
     build_hair_mesh,
     render_meshes_offscreen,
+    resolve_hair_asset_path,
 )
+
+ACTIVE_PHENOTYPE_CSV_NAME = "predicted_phenotypes.csv"
+DEMO_RENDER_PITCH_DEGREES = 0.0
+DEMO_RENDER_YAW_DEGREES = 0.0
+DEFAULT_GIF_FPS = 8
 
 def assemble_shape_from_selected_pcs(
     theta: torch.Tensor,
@@ -173,8 +179,8 @@ def ease_in_out(t: float) -> float:
 
 def build_demo_transform(
     vertices: np.ndarray,
-    pitch_degrees: float = -10.0,
-    yaw_degrees: float = 0.0,
+    pitch_degrees: float = DEMO_RENDER_PITCH_DEGREES,
+    yaw_degrees: float = DEMO_RENDER_YAW_DEGREES,
 ) -> np.ndarray:
     center = np.mean(vertices, axis=0)
 
@@ -203,8 +209,8 @@ def build_demo_scene_meshes(
     landmarks: np.ndarray,
     faces: np.ndarray,
     appearance_render_plan: Optional[Dict[str, Any]],
-    pitch_degrees: float = -10.0,
-    yaw_degrees: float = 0.0,
+    pitch_degrees: float = DEMO_RENDER_PITCH_DEGREES,
+    yaw_degrees: float = DEMO_RENDER_YAW_DEGREES,
     extra_rotation_transform: Optional[np.ndarray] = None,
 ) -> List[trimesh.Trimesh]:
     """
@@ -275,7 +281,7 @@ def save_morph_gif(
     faces: np.ndarray,
     output_path: Path,
     num_frames: int = 30,
-    fps: int = 12,
+    fps: int = DEFAULT_GIF_FPS,
     image_size: Tuple[int, int] = (640, 640),
     appearance_render_plan: Optional[Dict[str, Any]] = None,
 ) -> None:
@@ -306,8 +312,8 @@ def save_morph_gif(
                     landmarks=landmarks_cpu,
                     faces=faces,
                     appearance_render_plan=appearance_render_plan,
-                    pitch_degrees=-10.0,
-                    yaw_degrees=0.0,
+                    pitch_degrees=DEMO_RENDER_PITCH_DEGREES,
+                    yaw_degrees=DEMO_RENDER_YAW_DEGREES,
                     extra_rotation_transform=None,
                 )
 
@@ -327,7 +333,7 @@ def save_spin_gif(
     landmarks: np.ndarray,
     output_path: Path,
     num_frames: int = 36,
-    fps: int = 14,
+    fps: int = DEFAULT_GIF_FPS,
     image_size: Tuple[int, int] = (640, 640),
     appearance_render_plan: Optional[Dict[str, Any]] = None,
 ) -> None:
@@ -344,8 +350,8 @@ def save_spin_gif(
                 landmarks=landmarks,
                 faces=faces,
                 appearance_render_plan=appearance_render_plan,
-                pitch_degrees=-10.0,
-                yaw_degrees=0.0,
+                pitch_degrees=DEMO_RENDER_PITCH_DEGREES,
+                yaw_degrees=DEMO_RENDER_YAW_DEGREES,
                 extra_rotation_transform=rot_y,
             )
 
@@ -1450,50 +1456,6 @@ def get_base_region_configs() -> Dict[str, Dict[str, object]]:
                 "jaw_width": 1.0,
             },
         },
-        "gender_balance": {
-            "relative_controls": {
-                "face_width": -0.04,
-                "jaw_width": -0.06,
-                "chin_width_proxy": -0.05,
-                "nose_width": -0.03,
-                "left_eye_opening_height": +0.04,
-                "right_eye_opening_height": +0.04,
-                "left_brow_to_eye_distance": +0.03,
-                "right_brow_to_eye_distance": +0.03,
-                "upper_lip_thickness_proxy": +0.05,
-                "lower_lip_thickness_proxy": +0.05,
-            },
-            "measurement_weight_overrides": {
-                "face_width": 1.8,
-                "jaw_width": 2.1,
-                "chin_width_proxy": 2.0,
-                "nose_width": 1.4,
-                "left_eye_opening_height": 1.6,
-                "right_eye_opening_height": 1.6,
-                "left_brow_to_eye_distance": 1.5,
-                "right_brow_to_eye_distance": 1.5,
-                "upper_lip_thickness_proxy": 1.8,
-                "lower_lip_thickness_proxy": 1.8,
-            },
-            "preserve_measurements": [
-                "midface_width",
-                "lower_face_height",
-                "nose_height",
-                "outer_eye_width",
-                "inner_eye_distance",
-                "mouth_width",
-                "mouth_to_chin_height",
-            ],
-            "preserve_weight_overrides": {
-                "midface_width": 1.0,
-                "lower_face_height": 1.0,
-                "nose_height": 1.0,
-                "outer_eye_width": 1.0,
-                "inner_eye_distance": 1.0,
-                "mouth_width": 1.0,
-                "mouth_to_chin_height": 1.0,
-            },
-        },
     }
 
 
@@ -1841,117 +1803,6 @@ def apply_control_group_budgets(
     return adjusted, dampings
 
 
-DATASET_SAMPLE_ID_COLUMN = "sample_id"
-DATASET_APPEARANCE_COLUMNS = [
-    "gender",
-    "eye_color",
-    "hair_color",
-    "skin_tone",
-    "hair_texture",
-    "hair_thickness",
-    "hairline_shape",
-    "freckling",
-]
-DATASET_GEOMETRY_COLUMNS = [
-    "gender",
-    "face_width",
-    "face_height",
-    "jaw_shape",
-    "chin_prominence",
-    "cheekbone_height",
-    "nose_size",
-    "nose_width",
-    "nose_bridge_width",
-    "nose_bridge_height",
-    "nostril_width",
-    "eye_distance",
-    "eye_size",
-    "eye_shape",
-    "eyebrow_thickness",
-    "eyebrow_arch",
-    "lip_thickness",
-    "mouth_width",
-    "philtrum_depth",
-]
-DATASET_REQUIRED_COLUMNS = list(
-    dict.fromkeys(
-        [
-            DATASET_SAMPLE_ID_COLUMN,
-            *[name for name in DATASET_APPEARANCE_COLUMNS if name != "gender"],
-            *[name for name in DATASET_GEOMETRY_COLUMNS if name != "gender"],
-        ]
-    )
-)
-DEFAULT_DATASET_FILENAMES = (
-    "predicted_phenotypes.csv",
-    "dataset_complete_extended.csv",
-)
-
-
-def normalize_dataset_value(value: Any) -> Any:
-    if pd.isna(value):
-        return None
-    if isinstance(value, str):
-        text = value.strip()
-        if text == "" or text.lower() in {"nan", "null"}:
-            return None
-        return text.lower()
-    return value
-
-
-def normalize_dataset_row(row: Dict[str, Any]) -> Dict[str, Any]:
-    return {
-        str(key).strip(): normalize_dataset_value(value)
-        for key, value in row.items()
-    }
-
-
-def resolve_default_dataset_csv_path(base_dir: Optional[Path] = None) -> Path:
-    search_dir = Path(__file__).resolve().parent if base_dir is None else Path(base_dir)
-
-    candidate_paths = [search_dir / name for name in DEFAULT_DATASET_FILENAMES]
-    for candidate_path in candidate_paths:
-        if candidate_path.exists():
-            return candidate_path
-
-    tried = ", ".join(str(path) for path in candidate_paths)
-    raise FileNotFoundError(f"No supported dataset CSV found. Tried: {tried}")
-
-
-def load_dataset_row_by_sample_id(
-    dataset_csv_path: Path,
-    sample_id: str,
-) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    if not dataset_csv_path.exists():
-        raise FileNotFoundError(f"Dataset file not found: {dataset_csv_path}")
-
-    df = pd.read_csv(dataset_csv_path)
-    df.columns = [str(column_name).strip() for column_name in df.columns]
-
-    missing_columns = [
-        column_name
-        for column_name in DATASET_REQUIRED_COLUMNS
-        if column_name not in df.columns
-    ]
-    if missing_columns:
-        raise ValueError(
-            f"Dataset '{dataset_csv_path.name}' is missing required columns: "
-            f"{missing_columns}"
-        )
-
-    sample_ids = df[DATASET_SAMPLE_ID_COLUMN].astype(str).str.strip()
-    requested_sample_id = str(sample_id).strip()
-    matches = df[sample_ids.str.casefold() == requested_sample_id.casefold()]
-    if matches.empty:
-        raise ValueError(
-            f"sample_id '{sample_id}' not found in dataset '{dataset_csv_path.name}'."
-        )
-
-    raw_row = matches.iloc[0].to_dict()
-    normalized_row = normalize_dataset_row(raw_row)
-    return raw_row, normalized_row
-
-
 def get_dataset_row_control_defaults() -> Dict[str, object]:
     """
     More suitable defaults for a multi-trait phenotype fit.
@@ -1982,22 +1833,35 @@ def build_dataset_row_experiment_config(
     """
     Build one custom FLAME experiment config from a dataset row.
 
+    The phenotype source is always predicted_phenotypes.csv.
+
     - reads a dataset row
     - extracts appearance traits
     - maps supported geometry traits to control votes
     - merges the active region configs into one experiment config
     """
-    raw_row, row = load_dataset_row_by_sample_id(
-        dataset_csv_path=dataset_csv_path,
-        sample_id=sample_id,
-    )
+    dataset_csv_path = dataset_csv_path.with_name(ACTIVE_PHENOTYPE_CSV_NAME)
 
-    resolved_sample_id = str(raw_row[DATASET_SAMPLE_ID_COLUMN]).strip()
+    if not dataset_csv_path.exists():
+        raise FileNotFoundError(f"Dataset file not found: {dataset_csv_path}")
+
+    df = pd.read_csv(dataset_csv_path)
+
+    matches = df[df["sample_id"] == sample_id]
+    if matches.empty:
+        raise ValueError(f"sample_id '{sample_id}' not found in dataset.")
+
+    row = matches.iloc[0].to_dict()
+
     appearance_traits = extract_appearance_traits_from_row(row)
     appearance_render_plan = build_appearance_render_plan(appearance_traits)
+    resolved_hair_asset_path = resolve_hair_asset_path(appearance_render_plan)
+    appearance_render_plan["hair_asset_path"] = (
+        str(resolved_hair_asset_path) if resolved_hair_asset_path is not None else None
+    )
+    appearance_render_plan["hair_visible"] = resolved_hair_asset_path is not None
 
     geometry_traits = {
-        "gender": row.get("gender", "unknown"),
         "face_width": row["face_width"],
         "face_height": row["face_height"],
         "jaw_shape": row["jaw_shape"],
@@ -2027,12 +1891,6 @@ def build_dataset_row_experiment_config(
     # ------------------------------------------------------------
     # Trait -> control mapping (rebalanced first-pass geometry only)
     # ------------------------------------------------------------
-
-    # gender prior
-    if geometry_traits["gender"] == "female":
-        add_vote("gender_balance", +0.45)
-    elif geometry_traits["gender"] == "male":
-        add_vote("gender_balance", -0.45)
 
     # face width
     if geometry_traits["face_width"] == "wide":
@@ -2170,7 +2028,7 @@ def build_dataset_row_experiment_config(
 
     if not control_scores:
         raise RuntimeError(
-            f"No supported geometry traits were extracted from dataset row '{resolved_sample_id}'."
+            f"No supported geometry traits were extracted from dataset row '{sample_id}'."
         )
 
     named_scaled_configs: List[Tuple[str, float, Dict[str, object]]] = []
@@ -2208,9 +2066,7 @@ def build_dataset_row_experiment_config(
     measurement_conflicts = build_measurement_conflict_report(named_scaled_configs)
 
     metadata = {
-        "sample_id": resolved_sample_id,
-        "dataset_source": dataset_csv_path.name,
-        "overall_confidence": raw_row.get("overall_confidence"),
+        "sample_id": sample_id,
         "geometry_traits": geometry_traits,
         "control_votes": control_votes,
         "raw_control_scores": raw_control_scores,
@@ -2413,15 +2269,15 @@ def main():
     generate_demo_gifs = True
     morph_gif_frames = 30
     spin_gif_frames = 36
-    gif_fps = 12
+    gif_fps = DEFAULT_GIF_FPS
     gif_image_size = (720, 720)
 
     # ------------------------------------------------------------
     # 2) Experiment selection
     # ------------------------------------------------------------
     dataset_mode = True
-    dataset_csv_path = resolve_default_dataset_csv_path()
-    dataset_sample_id = "SYNTH_002246"
+    dataset_csv_path = Path(__file__).with_name(ACTIVE_PHENOTYPE_CSV_NAME)
+    dataset_sample_id = "SYNTH_001977"   # first strong geometry test row
 
     dataset_metadata: Dict[str, object] | None = None
 
@@ -2467,11 +2323,7 @@ def main():
     preserve_weight_overrides: Dict[str, float] = experiment_config["preserve_weight_overrides"]  # type: ignore
 
     if dataset_mode and dataset_metadata is not None:
-        print(f"\nDataset source: {dataset_metadata['dataset_source']}")
         print(f"\nDataset row selected: {dataset_metadata['sample_id']}")
-        overall_confidence = dataset_metadata.get("overall_confidence")
-        if overall_confidence is not None and not pd.isna(overall_confidence):
-            print(f"Dataset confidence: {float(overall_confidence):.4f}")
         print("\nGeometry traits from dataset row:")
         for trait_name, trait_value in dataset_metadata["geometry_traits"].items():  # type: ignore
             print(f"  - {trait_name:24s} {trait_value}")
@@ -2838,9 +2690,7 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     if dataset_mode and dataset_metadata is not None:
         appearance_preview = {
-            "dataset_source": dataset_metadata.get("dataset_source"),
             "sample_id": dataset_metadata["sample_id"],
-            "overall_confidence": dataset_metadata.get("overall_confidence"),
             "appearance_traits": dataset_metadata.get("appearance_traits", {}),
             "appearance_render_plan": dataset_metadata.get("appearance_render_plan", {}),
         }
