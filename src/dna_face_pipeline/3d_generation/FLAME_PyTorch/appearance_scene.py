@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -7,7 +8,8 @@ import trimesh.transformations as transformations
 
 from pathlib import Path
 
-HAIR_ASSET_PATH = Path(__file__).resolve().parent / "assets" / "hair" / "wolf_haircut.glb"
+HAIR_ASSET_DIR = Path(__file__).resolve().parent / "assets" / "hair"
+SUPPORTED_HAIR_ASSET_SUFFIXES = {".glb", ".gltf"}
 
 EXACT_SKIN_TONE_RGB: Dict[str, np.ndarray] = {
     "very_light": np.array([241, 194, 125], dtype=np.float32) / 255.0,  # #f1c27d
@@ -63,13 +65,6 @@ def rgba_float_to_uint8(rgba: np.ndarray) -> np.ndarray:
     rgba = np.asarray(rgba, dtype=np.float32)
     rgba = np.clip(rgba, 0.0, 1.0)
     return np.round(rgba * 255.0).astype(np.uint8)
-
-
-def _rgb_to_float(rgb: Sequence[float]) -> np.ndarray:
-    arr = np.asarray(rgb, dtype=np.float32)
-    if arr.max() > 1.0:
-        arr = arr / 255.0
-    return np.clip(arr, 0.0, 1.0)
 
 
 def _smoothstep(edge0: float, edge1: float, x: np.ndarray) -> np.ndarray:
@@ -292,192 +287,170 @@ def load_asset_as_single_trimesh(asset_path: Path) -> Optional[trimesh.Trimesh]:
     return None
 
 
-def _select_region_vertices(
-    vertices: np.ndarray,
-    mask: np.ndarray,
-    fallback: Optional[np.ndarray] = None,
-) -> np.ndarray:
-    verts = np.asarray(vertices, dtype=np.float64)
-    mask_bool = np.asarray(mask, dtype=bool)
-    if mask_bool.shape[0] == verts.shape[0] and np.any(mask_bool):
-        return verts[mask_bool]
-    if fallback is not None and len(fallback) > 0:
-        return np.asarray(fallback, dtype=np.float64)
-    return verts
+@lru_cache(maxsize=1)
+def discover_hair_asset_catalog() -> Dict[str, Path]:
+    catalog: Dict[str, Path] = {}
+
+    if not HAIR_ASSET_DIR.exists():
+        return catalog
+
+    for asset_path in sorted(HAIR_ASSET_DIR.iterdir()):
+        if not asset_path.is_file():
+            continue
+        if asset_path.suffix.lower() not in SUPPORTED_HAIR_ASSET_SUFFIXES:
+            continue
+
+        asset_id = asset_path.stem.strip().lower()
+        if asset_id == "" or asset_id in catalog:
+            continue
+
+        catalog[asset_id] = asset_path
+
+    return catalog
 
 
-def _compute_head_hair_fit_guides(vertices: np.ndarray) -> Dict[str, float]:
-    verts = np.asarray(vertices, dtype=np.float64)
-    mins = verts.min(axis=0)
-    maxs = verts.max(axis=0)
-    head_height = float(maxs[1] - mins[1])
-    head_depth = float(maxs[2] - mins[2])
+@lru_cache(maxsize=None)
+def _resolve_hair_asset_path_from_id(hair_asset_id: str) -> Optional[Path]:
+    asset_id = str(hair_asset_id).strip().lower()
+    if asset_id == "":
+        return None
 
-    x_norm, y_norm, z_norm = _normalize_face_vertex_coordinates(verts)
+    asset_path = discover_hair_asset_catalog().get(asset_id)
+    if asset_path is None:
+        print(f"[appearance_scene] No exact hair asset found for '{asset_id}'. Skipping hair.")
+        return None
 
-    upper_head_mask = y_norm > 0.58
-    crown_mask = y_norm > 0.86
-    temple_mask = (
-        (y_norm > 0.50)
-        & (y_norm < 0.82)
-        & (np.abs(x_norm) > 0.36)
-        & (np.abs(x_norm) < 0.90)
+    return asset_path
+
+
+def resolve_hair_asset_path(
+    appearance_render_plan: Optional[Dict[str, Any]],
+) -> Optional[Path]:
+    if appearance_render_plan is None:
+        return None
+
+    raw_hair_asset_id = appearance_render_plan.get("hair_asset_id")
+    if raw_hair_asset_id is None:
+        return None
+
+    hair_asset_id = str(raw_hair_asset_id).strip().lower()
+    if hair_asset_id in {"", "none", "unknown"}:
+        return None
+
+    return _resolve_hair_asset_path_from_id(hair_asset_id)
+
+
+@lru_cache(maxsize=None)
+def _load_hair_asset_template(asset_path_str: str) -> Optional[trimesh.Trimesh]:
+    return load_asset_as_single_trimesh(Path(asset_path_str))
+
+
+def load_hair_asset_template(asset_path: Path) -> Optional[trimesh.Trimesh]:
+    template_mesh = _load_hair_asset_template(str(asset_path))
+    if template_mesh is None:
+        return None
+
+    return trimesh.Trimesh(
+        vertices=template_mesh.vertices.copy(),
+        faces=template_mesh.faces.copy(),
+        process=False,
     )
-    forehead_mask = (
-        (y_norm > 0.62)
-        & (y_norm < 0.90)
-        & (np.abs(x_norm) < 0.54)
-        & (z_norm > 0.46)
-    )
 
-    upper_head_pts = _select_region_vertices(verts, upper_head_mask)
-    crown_pts = _select_region_vertices(verts, crown_mask, fallback=upper_head_pts)
-    temple_pts = _select_region_vertices(verts, temple_mask, fallback=upper_head_pts)
-    forehead_pts = _select_region_vertices(verts, forehead_mask, fallback=upper_head_pts)
 
-    upper_width = float(
-        np.quantile(upper_head_pts[:, 0], 0.90)
-        - np.quantile(upper_head_pts[:, 0], 0.10)
-    )
-    temple_width = float(
-        np.quantile(temple_pts[:, 0], 0.90)
-        - np.quantile(temple_pts[:, 0], 0.10)
-    )
+def _resolve_hair_fit_adjustments(
+    appearance_render_plan: Optional[Dict[str, Any]],
+) -> Dict[str, float]:
+    hair_asset_id = str(
+        (appearance_render_plan or {}).get("hair_asset_id", "")
+    ).strip().lower()
+    hair_thickness = str(
+        (appearance_render_plan or {}).get("hair_thickness_label", "medium")
+    ).strip().lower()
+    hairline_shape = str(
+        (appearance_render_plan or {}).get("hairline_shape_label", "straight")
+    ).strip().lower()
+    gender = str(
+        (appearance_render_plan or {}).get("gender_label", "unknown")
+    ).strip().lower()
 
-    scalp_width = max(1e-6, max(upper_width * 1.24, temple_width * 1.26))
-    front_z = float(np.quantile(forehead_pts[:, 2], 0.60))
-    crown_z = float(np.median(crown_pts[:, 2]))
+    width_scale = 1.0
+    height_scale = 1.0
+    depth_scale = 1.0
+    y_offset_ratio = 0.0
+    z_offset_ratio = 0.0
+
+    if hair_thickness == "fine":
+        width_scale *= 1.02
+        height_scale *= 1.03
+        depth_scale *= 0.98
+        y_offset_ratio += 0.008
+        z_offset_ratio -= 0.012
+    elif hair_thickness == "thick":
+        width_scale *= 1.10
+        height_scale *= 1.06
+        depth_scale *= 1.14
+        y_offset_ratio -= 0.002
+        z_offset_ratio += 0.010
+
+    if hairline_shape == "rounded":
+        width_scale *= 1.01
+        height_scale *= 1.01
+        y_offset_ratio += 0.010
+        z_offset_ratio -= 0.010
+    elif hairline_shape == "widow_peak":
+        y_offset_ratio -= 0.002
+        z_offset_ratio += 0.004
+
+    if gender == "female":
+        height_scale *= 1.03
+    elif gender == "male":
+        height_scale *= 1.00
+
+    # We are tuning hair assets one combination at a time. Keep these
+    # adjustments narrowly scoped so other combinations remain unchanged.
+    if hair_asset_id == "female_straight_rounded":
+        width_scale *= 1.09
+        height_scale *= 1.10
+        depth_scale *= 1.08
+        y_offset_ratio -= 0.050
+        z_offset_ratio += 0.052
+    elif hair_asset_id == "male_wavy_widow_peak":
+        width_scale *= 0.84
+        height_scale *= 0.80
+        depth_scale *= 0.84
+        y_offset_ratio += 0.055
+        z_offset_ratio -= 0.055
+    elif hair_asset_id == "male_curly_rounded":
+        z_offset_ratio -= 0.075
+    elif hair_asset_id == "male_curly_straight":
+        z_offset_ratio -= 0.110
+    elif hair_asset_id == "male_straight_widow_peak":
+        width_scale *= 1.10
+        height_scale *= 1.12
+        depth_scale *= 1.08
+        z_offset_ratio -= 0.110
 
     return {
-        "center_x": float(np.median(crown_pts[:, 0])),
-        "anchor_y": float(maxs[1] - 0.078 * head_height),
-        "anchor_z": float(0.60 * front_z + 0.40 * crown_z - 0.004 * head_depth),
-        "scalp_width": scalp_width,
+        "width_scale": width_scale,
+        "height_scale": height_scale,
+        "depth_scale": depth_scale,
+        "y_offset_ratio": y_offset_ratio,
+        "z_offset_ratio": z_offset_ratio,
     }
 
 
-def _compute_asset_hair_fit_guides(vertices: np.ndarray) -> Dict[str, float]:
-    verts = np.asarray(vertices, dtype=np.float64)
-    mins = verts.min(axis=0)
-    maxs = verts.max(axis=0)
+def _apply_combo_specific_hair_orientation(
+    hair_mesh: trimesh.Trimesh,
+    appearance_render_plan: Optional[Dict[str, Any]],
+) -> None:
+    hair_asset_id = str(
+        (appearance_render_plan or {}).get("hair_asset_id", "")
+    ).strip().lower()
 
-    x_norm, y_norm, z_norm = _normalize_face_vertex_coordinates(verts)
-
-    upper_cap_mask = y_norm > 0.70
-    crown_mask = y_norm > 0.88
-    frontal_root_mask = (
-        (y_norm > 0.58)
-        & (y_norm < 0.84)
-        & (np.abs(x_norm) < 0.60)
-        & (z_norm > 0.60)
-    )
-
-    upper_cap_pts = _select_region_vertices(verts, upper_cap_mask)
-    crown_pts = _select_region_vertices(verts, crown_mask, fallback=upper_cap_pts)
-    frontal_root_pts = _select_region_vertices(
-        verts,
-        frontal_root_mask,
-        fallback=upper_cap_pts,
-    )
-
-    upper_z = float(np.median(upper_cap_pts[:, 2]))
-    front_z = float(np.quantile(frontal_root_pts[:, 2], 0.45))
-
-    return {
-        "anchor_x": float(np.median(crown_pts[:, 0])),
-        "anchor_y": float(np.quantile(upper_cap_pts[:, 1], 0.70)),
-        "anchor_z": float(0.80 * upper_z + 0.20 * front_z),
-        "width": float(maxs[0] - mins[0]),
-        "height": float(maxs[1] - mins[1]),
-        "depth": float(maxs[2] - mins[2]),
-    }
-
-
-def _apply_hair_root_fit(vertices: np.ndarray) -> np.ndarray:
-    fitted = np.asarray(vertices, dtype=np.float64).copy()
-    x_norm, y_norm, _ = _normalize_face_vertex_coordinates(fitted)
-
-    root_contact = _smoothstep(0.54, 0.94, y_norm)
-    side_contact = root_contact * _smoothstep(0.34, 0.90, np.abs(x_norm))
-    crown_contact = root_contact * (
-        1.0 - 0.45 * _smoothstep(0.30, 0.92, np.abs(x_norm))
-    )
-
-    fitted[:, 0] *= 1.0 - 0.055 * side_contact
-    fitted[:, 2] *= 1.0 - 0.085 * crown_contact
-    fitted[:, 1] -= 0.012 * float(np.ptp(fitted[:, 1])) * crown_contact
-
-    return fitted
-
-
-def _build_hair_vertex_colors(
-    vertices: np.ndarray,
-    hair_rgb_uint8: Sequence[float],
-) -> np.ndarray:
-    verts = np.asarray(vertices, dtype=np.float64)
-    base_rgb = _rgb_to_float(hair_rgb_uint8)
-    x_norm, y_norm, z_norm = _normalize_face_vertex_coordinates(verts)
-
-    strand_noise = _vertex_hash_noise(
-        verts,
-        scale=210.0,
-        offset=(1.7, 4.9, 8.3),
-    )
-    clump_noise = _vertex_hash_noise(
-        verts,
-        scale=72.0,
-        offset=(6.2, 2.7, 3.9),
-    )
-
-    brightness = float(
-        np.dot(base_rgb, np.array([0.299, 0.587, 0.114], dtype=np.float32))
-    )
-    highlight_strength = 0.04 + 0.10 * brightness
-    shadow_strength = 0.09 - 0.03 * brightness
-
-    root_shadow = _smoothstep(0.38, 0.96, y_norm)
-    tip_lift = _smoothstep(0.10, 0.92, 1.0 - y_norm)
-    crown_highlight = np.exp(
-        -(
-            ((x_norm / 0.72) ** 2)
-            + (((y_norm - 0.84) / 0.22) ** 2)
-            + (((z_norm - 0.70) / 0.32) ** 2)
-        )
-    )
-    side_shadow = _smoothstep(0.42, 1.00, np.abs(x_norm))
-
-    value_scale = (
-        0.92
-        + highlight_strength * crown_highlight
-        + 0.05 * tip_lift
-        + 0.08 * (clump_noise - 0.5)
-        + 0.04 * (strand_noise - 0.5)
-        - shadow_strength * root_shadow
-        - 0.04 * side_shadow
-    )
-    value_scale = np.clip(value_scale, 0.68, 1.12)
-
-    vertex_rgb = base_rgb[None, :] * value_scale[:, None]
-
-    warm_target = np.clip(
-        base_rgb * np.array([1.05, 1.00, 0.93], dtype=np.float32),
-        0.0,
-        1.0,
-    )
-    warm_mix = np.clip(0.03 + 0.05 * crown_highlight + 0.02 * tip_lift, 0.0, 0.10)
-    vertex_rgb = (
-        (1.0 - warm_mix[:, None]) * vertex_rgb
-        + warm_mix[:, None] * warm_target[None, :]
-    )
-
-    vertex_rgba = np.concatenate(
-        [
-            np.clip(vertex_rgb, 0.0, 1.0),
-            np.ones((verts.shape[0], 1), dtype=np.float32),
-        ],
-        axis=1,
-    )
-    return rgba_float_to_uint8(vertex_rgba)
+    # This asset imports facing backward relative to the FLAME head.
+    if hair_asset_id == "male_wavy_widow_peak":
+        rot = transformations.rotation_matrix(np.radians(180.0), [0, 1, 0])
+        hair_mesh.apply_transform(rot)
 
 
 def build_hair_mesh(
@@ -485,79 +458,108 @@ def build_hair_mesh(
     appearance_render_plan: Optional[Dict[str, Any]],
 ) -> Optional[trimesh.Trimesh]:
     """
-    Load a single hair asset, fit it to the upper skull, and tint it
-    using the dataset hair color.
+    Load the exact hair asset selected by hair_asset_id, scale/translate it
+    to the FLAME head, and tint it using hair_color_rgb.
     """
 
     if appearance_render_plan is None:
         return None
 
-    if not HAIR_ASSET_PATH.exists():
-        print(f"[appearance_scene] Hair asset not found: {HAIR_ASSET_PATH}")
+    hair_asset_path = resolve_hair_asset_path(appearance_render_plan)
+    if hair_asset_path is None:
         return None
 
-    hair_mesh = load_asset_as_single_trimesh(HAIR_ASSET_PATH)
+    hair_mesh = load_hair_asset_template(hair_asset_path)
     if hair_mesh is None:
         return None
 
+    # ------------------------------------------------------------
+    # Tint the hair using the dataset hair color
+    # ------------------------------------------------------------
     hair_rgb = appearance_render_plan.get("hair_color_rgb", [92, 62, 42])
-    head_guides = _compute_head_hair_fit_guides(vertices)
-    asset_guides = _compute_asset_hair_fit_guides(hair_mesh.vertices)
+    hair_mesh.visual.vertex_colors = build_uniform_vertex_colors(
+        len(hair_mesh.vertices),
+        hair_rgb,
+        alpha_uint8=255,
+    )
 
-    if (
-        asset_guides["width"] <= 1e-8
-        or asset_guides["height"] <= 1e-8
-        or asset_guides["depth"] <= 1e-8
-    ):
+    # ------------------------------------------------------------
+    # Estimate FLAME head bounds
+    # ------------------------------------------------------------
+    x_min, y_min, z_min = vertices.min(axis=0)
+    x_max, y_max, z_max = vertices.max(axis=0)
+
+    head_width = x_max - x_min
+    head_height = y_max - y_min
+    head_depth = z_max - z_min
+
+    # ------------------------------------------------------------
+    # Combo-specific asset orientation correction
+    # ------------------------------------------------------------
+    _apply_combo_specific_hair_orientation(
+        hair_mesh=hair_mesh,
+        appearance_render_plan=appearance_render_plan,
+    )
+
+    # ------------------------------------------------------------
+    # Source asset bounds
+    # ------------------------------------------------------------
+    hx_min, hy_min, hz_min = hair_mesh.vertices.min(axis=0)
+    hx_max, hy_max, hz_max = hair_mesh.vertices.max(axis=0)
+
+    hair_width = hx_max - hx_min
+    hair_height = hy_max - hy_min
+    hair_depth = hz_max - hz_min
+
+    if hair_width <= 1e-8 or hair_height <= 1e-8 or hair_depth <= 1e-8:
         print("[appearance_scene] Hair asset has invalid bounds.")
         return None
 
+    # ------------------------------------------------------------
+    # Scalp/root anchor instead of bbox center
+    # ------------------------------------------------------------
+    source_anchor_x = 0.5 * (hx_min + hx_max)
+    source_anchor_y = float(np.quantile(hair_mesh.vertices[:, 1], 0.76))
+    source_anchor_z = 0.5 * (hz_min + hz_max)
+
     hair_mesh.vertices -= np.array(
+        [source_anchor_x, source_anchor_y, source_anchor_z],
+        dtype=np.float64,
+    )[None, :]
+
+    # ------------------------------------------------------------
+    # Uniform scale (width-based)
+    # ------------------------------------------------------------
+    uniform_scale = 1.08 * head_width / hair_width
+    hair_mesh.vertices *= float(uniform_scale)
+
+    fit_adjustments = _resolve_hair_fit_adjustments(appearance_render_plan)
+    hair_mesh.vertices *= np.array(
         [
-            asset_guides["anchor_x"],
-            asset_guides["anchor_y"],
-            asset_guides["anchor_z"],
+            fit_adjustments["width_scale"],
+            fit_adjustments["height_scale"],
+            fit_adjustments["depth_scale"],
         ],
         dtype=np.float64,
     )[None, :]
 
-    hair_thickness_label = str(
-        appearance_render_plan.get("hair_thickness_label", "medium")
-    ).strip().lower()
-    hair_texture_label = str(
-        appearance_render_plan.get("hair_texture_label", "unknown")
-    ).strip().lower()
-
-    thickness_scale = {
-        "fine": 0.97,
-        "medium": 1.00,
-        "thick": 1.04,
-    }.get(hair_thickness_label, 1.00)
-
-    texture_scale = {
-        "straight": 0.99,
-        "wavy": 1.00,
-        "curly": 1.02,
-    }.get(hair_texture_label, 1.00)
-
-    head_width = float(vertices[:, 0].max() - vertices[:, 0].min())
-    target_hair_width = max(head_guides["scalp_width"], 0.98 * head_width)
-    uniform_scale = (
-        target_hair_width / asset_guides["width"]
-    ) * thickness_scale * texture_scale
-    hair_mesh.vertices *= float(uniform_scale)
-    hair_mesh.vertices = _apply_hair_root_fit(hair_mesh.vertices)
-    hair_mesh.visual.vertex_colors = _build_hair_vertex_colors(
-        hair_mesh.vertices,
-        hair_rgb,
+    # ------------------------------------------------------------
+    # Place on FLAME head
+    # ------------------------------------------------------------
+    target_center_x = 0.5 * (x_min + x_max)
+    target_anchor_y = (
+        y_max
+        - 0.02 * head_height
+        + fit_adjustments["y_offset_ratio"] * head_height
+    )
+    target_center_z = (
+        0.5 * (z_min + z_max)
+        - 0.02 * head_depth
+        + fit_adjustments["z_offset_ratio"] * head_depth
     )
 
     hair_mesh.vertices += np.array(
-        [
-            head_guides["center_x"],
-            head_guides["anchor_y"],
-            head_guides["anchor_z"],
-        ],
+        [target_center_x, target_anchor_y, target_center_z],
         dtype=np.float64,
     )[None, :]
 
@@ -1050,256 +1052,70 @@ def _rotation_from_z_to_vector(target_direction: np.ndarray) -> np.ndarray:
     return _axis_angle_rotation_matrix(axis, angle)
 
 
-def _interpolate_curve_y(
-    x_ctrl: np.ndarray,
-    y_ctrl: np.ndarray,
-    x_query: np.ndarray,
-) -> np.ndarray:
-    order = np.argsort(x_ctrl)
-    x_sorted = np.asarray(x_ctrl[order], dtype=np.float64)
-    y_sorted = np.asarray(y_ctrl[order], dtype=np.float64)
-
-    unique_x: List[float] = []
-    unique_y: List[float] = []
-    for x_val, y_val in zip(x_sorted.tolist(), y_sorted.tolist()):
-        if unique_x and abs(x_val - unique_x[-1]) < 1e-8:
-            unique_y[-1] = 0.5 * (unique_y[-1] + y_val)
-        else:
-            unique_x.append(float(x_val))
-            unique_y.append(float(y_val))
-
-    if len(unique_x) == 1:
-        return np.full_like(x_query, unique_y[0], dtype=np.float64)
-
-    return np.interp(
-        np.asarray(x_query, dtype=np.float64),
-        np.asarray(unique_x, dtype=np.float64),
-        np.asarray(unique_y, dtype=np.float64),
-    )
-
-
 def build_colored_eyeball_mesh(
-    eye_landmarks: np.ndarray,
+    center: np.ndarray,
+    radius: float,
     iris_rgb: Sequence[int],
     gaze_direction: Sequence[float] = (0.0, 0.0, 1.0),
-    sclera_rgb: Sequence[int] = (238, 239, 235),
-    pupil_rgb: Sequence[int] = (18, 14, 12),
-    grid_cols: int = 28,
-    grid_rows: int = 11,
+    sclera_rgb: Sequence[int] = (245, 245, 245),
+    pupil_rgb: Sequence[int] = (20, 20, 20),
+    iris_angle_degrees: float = 22.0,
+    pupil_angle_degrees: float = 9.5,
+    subdivisions: int = 3,
 ) -> trimesh.Trimesh:
     """
-    Build one visible eye-surface mesh shaped by the eyelid landmarks.
+    Build one eyeball mesh as an icosphere with vertex colors for:
+    - sclera
+    - iris
+    - pupil
 
-    This intentionally renders the exposed eye surface rather than a full
-    spherical eyeball so the visible silhouette reads like an eye opening,
-    not a round sphere sitting in the socket.
+    The iris is centered around gaze_direction.
     """
-    eye_landmarks = np.asarray(eye_landmarks, dtype=np.float64)
-    if eye_landmarks.shape != (6, 3):
-        raise ValueError("eye_landmarks must have shape (6, 3).")
+    if radius <= 0.0:
+        raise ValueError("Eyeball radius must be positive.")
 
-    gaze_dir = _safe_normalize(np.asarray(gaze_direction, dtype=np.float64))
+    sphere = trimesh.creation.icosphere(subdivisions=subdivisions, radius=float(radius))
+    vertices = sphere.vertices.copy()
 
-    corner_start = eye_landmarks[0]
-    corner_end = eye_landmarks[3]
-    upper_mid = np.mean(eye_landmarks[1:3], axis=0)
-    lower_mid = np.mean(eye_landmarks[4:6], axis=0)
+    rotation = _rotation_from_z_to_vector(np.array(gaze_direction, dtype=np.float64))
+    vertices = (rotation @ vertices.T).T
+    vertices = vertices + np.asarray(center, dtype=np.float64)
 
-    width_vec = corner_end - corner_start
-    width = float(np.linalg.norm(width_vec))
-    if width <= 1e-8:
-        raise ValueError("Eye landmarks produced a degenerate eye width.")
-
-    eye_right = width_vec - gaze_dir * float(np.dot(width_vec, gaze_dir))
-    if np.linalg.norm(eye_right) < 1e-8:
-        eye_right = width_vec
-    eye_right = _safe_normalize(eye_right)
-
-    vertical_hint = upper_mid - lower_mid
-    eye_up = (
-        vertical_hint
-        - gaze_dir * float(np.dot(vertical_hint, gaze_dir))
-        - eye_right * float(np.dot(vertical_hint, eye_right))
-    )
-    if np.linalg.norm(eye_up) < 1e-8:
-        eye_up = np.cross(gaze_dir, eye_right)
-    eye_up = _safe_normalize(eye_up)
-    if float(np.dot(eye_up, vertical_hint)) < 0.0:
-        eye_up = -eye_up
-
-    eye_forward = _safe_normalize(np.cross(eye_right, eye_up))
-    if float(np.dot(eye_forward, gaze_dir)) < 0.0:
-        eye_forward = -eye_forward
-        eye_up = _safe_normalize(np.cross(eye_forward, eye_right))
-
-    origin = 0.25 * (corner_start + corner_end + upper_mid + lower_mid)
-
-    local_x = (eye_landmarks - origin[None, :]) @ eye_right
-    local_y = (eye_landmarks - origin[None, :]) @ eye_up
-    local_z = (eye_landmarks - origin[None, :]) @ eye_forward
-
-    upper_indices = np.array([0, 1, 2, 3], dtype=np.int64)
-    lower_indices = np.array([0, 5, 4, 3], dtype=np.int64)
-
-    x_min = float(min(local_x[0], local_x[3]))
-    x_max = float(max(local_x[0], local_x[3]))
-    x_grid = np.linspace(x_min, x_max, int(grid_cols), dtype=np.float64)
-
-    upper_y = _interpolate_curve_y(local_x[upper_indices], local_y[upper_indices], x_grid)
-    lower_y = _interpolate_curve_y(local_x[lower_indices], local_y[lower_indices], x_grid)
-    upper_z = _interpolate_curve_y(local_x[upper_indices], local_z[upper_indices], x_grid)
-    lower_z = _interpolate_curve_y(local_x[lower_indices], local_z[lower_indices], x_grid)
-
-    mid_opening_height = float(
-        np.linalg.norm(upper_mid - lower_mid)
-    )
-    mid_aperture = max(0.5 * mid_opening_height, 1e-5)
-    half_width = max(0.5 * width, 1e-5)
-    sclera_rgb_float = _rgb_to_float(sclera_rgb)
-    iris_rgb_float = _rgb_to_float(iris_rgb)
-    pupil_rgb_float = _rgb_to_float(pupil_rgb)
-
-    vertices_local: List[np.ndarray] = []
-    local_samples: List[Tuple[float, float, float, float]] = []
-    faces: List[List[int]] = []
-
-    base_depth = 0.11 * width
-    cornea_depth = 0.022 * width
-    iris_center_y = 0.10 * mid_aperture
-    iris_radius = max(
-        min(0.24 * width, 1.12 * mid_aperture),
-        0.16 * width,
-    )
-    pupil_radius = 0.34 * iris_radius
-
-    for col_idx, x_val in enumerate(x_grid):
-        y_upper = float(upper_y[col_idx])
-        y_lower = float(lower_y[col_idx])
-        z_upper = float(upper_z[col_idx])
-        z_lower = float(lower_z[col_idx])
-        if y_upper < y_lower:
-            y_upper, y_lower = y_lower, y_upper
-            z_upper, z_lower = z_lower, z_upper
-
-        aperture_half = max(0.5 * (y_upper - y_lower), 1e-5)
-        center_y = 0.5 * (y_upper + y_lower)
-
-        for row_idx, t in enumerate(np.linspace(0.0, 1.0, int(grid_rows), dtype=np.float64)):
-            y_val = y_lower + t * (y_upper - y_lower)
-
-            x_norm = x_val / half_width
-            y_norm = (y_val - center_y) / aperture_half
-            surface_term = max(0.0, 1.0 - x_norm ** 2 - 0.72 * y_norm ** 2)
-
-            iris_dx = x_val
-            iris_dy = y_val - iris_center_y
-            iris_r_norm = np.sqrt(iris_dx ** 2 + iris_dy ** 2) / max(iris_radius, 1e-6)
-            cornea_term = max(0.0, 1.0 - iris_r_norm ** 2)
-
-            rim_z = z_lower + t * (z_upper - z_lower)
-            z_val = (
-                rim_z
-                + base_depth * np.sqrt(surface_term)
-                + cornea_depth * (cornea_term ** 2)
-            )
-
-            vertices_local.append(
-                x_val * eye_right + y_val * eye_up + z_val * eye_forward
-            )
-            local_samples.append((x_norm, y_norm, iris_dx, iris_dy))
-
-            if col_idx < len(x_grid) - 1 and row_idx < int(grid_rows) - 1:
-                idx = col_idx * int(grid_rows) + row_idx
-                faces.append([idx, idx + int(grid_rows), idx + 1])
-                faces.append(
-                    [
-                        idx + int(grid_rows),
-                        idx + int(grid_rows) + 1,
-                        idx + 1,
-                    ]
-                )
-
-    vertices = origin[None, :] + np.asarray(vertices_local, dtype=np.float64)
     mesh = trimesh.Trimesh(
         vertices=vertices,
-        faces=np.asarray(faces, dtype=np.int64),
+        faces=sphere.faces.copy(),
         process=False,
     )
 
-    local_sample_arr = np.asarray(local_samples, dtype=np.float64)
-    x_norm = local_sample_arr[:, 0]
-    y_norm = local_sample_arr[:, 1]
-    iris_dx = local_sample_arr[:, 2]
-    iris_dy = local_sample_arr[:, 3]
-
-    iris_r_norm = np.sqrt(iris_dx ** 2 + iris_dy ** 2) / max(iris_radius, 1e-6)
-    iris_mask = iris_r_norm <= 1.0
-    pupil_mask = iris_r_norm <= (pupil_radius / max(iris_radius, 1e-6))
-    iris_only_mask = iris_mask & ~pupil_mask
-
-    vertex_rgb = np.tile(sclera_rgb_float[None, :], (vertices.shape[0], 1))
-
-    upper_lid_shadow = _smoothstep(0.00, 0.95, y_norm)
-    eye_corner_shadow = _smoothstep(0.42, 1.00, np.abs(x_norm))
-    lower_sclera_lift = _smoothstep(0.12, 1.00, -y_norm)
-    sclera_shade = (
-        0.95
-        - 0.22 * upper_lid_shadow
-        - 0.05 * eye_corner_shadow
-        + 0.04 * lower_sclera_lift
-    )
-    vertex_rgb *= np.clip(sclera_shade[:, None], 0.70, 1.02)
-
-    iris_azimuth = np.arctan2(iris_dy, iris_dx + 1e-8)
-    iris_spokes = 0.91 + 0.09 * np.cos(iris_azimuth * 11.0)
-    iris_core_lift = 0.82 + 0.20 * (1.0 - np.clip(iris_r_norm, 0.0, 1.0))
-    iris_top_shadow = 1.0 - 0.18 * upper_lid_shadow
-    limbal_ring = _smoothstep(0.70, 1.00, np.clip(iris_r_norm, 0.0, 1.0))
-
-    iris_colors = iris_rgb_float[None, :] * (
-        iris_spokes * iris_core_lift * iris_top_shadow
-    )[:, None]
-    iris_colors = iris_colors * (1.0 - 0.30 * limbal_ring[:, None])
-    iris_colors = np.clip(iris_colors, 0.0, 1.0)
-    vertex_rgb[iris_only_mask] = iris_colors[iris_only_mask]
-
-    pupil_colors = pupil_rgb_float[None, :] * (
-        0.92 - 0.10 * upper_lid_shadow
-    )[:, None]
-    pupil_colors = np.clip(pupil_colors, 0.0, 1.0)
-    vertex_rgb[pupil_mask] = pupil_colors[pupil_mask]
-
-    highlight_x = -0.18 * iris_radius
-    highlight_y = 0.24 * iris_radius
-    highlight_r = np.sqrt(
-        ((iris_dx - highlight_x) / max(0.34 * iris_radius, 1e-6)) ** 2
-        + ((iris_dy - highlight_y) / max(0.24 * iris_radius, 1e-6)) ** 2
-    )
-    highlight_strength = 1.0 - _smoothstep(0.0, 1.0, highlight_r)
-    highlight_strength *= (
-        0.70 * iris_mask.astype(np.float32) + 0.16 * (~iris_mask).astype(np.float32)
-    )
-    highlight_mix = 0.40 * highlight_strength
-    vertex_rgb = (
-        (1.0 - highlight_mix[:, None]) * vertex_rgb
-        + highlight_mix[:, None] * np.ones((1, 3), dtype=np.float32)
+    local_dirs = vertices - np.asarray(center, dtype=np.float64)
+    local_dirs = local_dirs / np.clip(
+        np.linalg.norm(local_dirs, axis=1, keepdims=True),
+        1e-8,
+        None,
     )
 
-    vertex_rgba = np.concatenate(
-        [
-            np.clip(vertex_rgb, 0.0, 1.0),
-            np.ones((vertices.shape[0], 1), dtype=np.float32),
-        ],
-        axis=1,
-    )
-    mesh.visual.vertex_colors = rgba_float_to_uint8(vertex_rgba)
+    gaze_dir = _safe_normalize(np.asarray(gaze_direction, dtype=np.float64))
+    cos_to_gaze = np.clip(local_dirs @ gaze_dir, -1.0, 1.0)
+    angles = np.degrees(np.arccos(cos_to_gaze))
+
+    iris_mask = angles <= float(iris_angle_degrees)
+    pupil_mask = angles <= float(pupil_angle_degrees)
+
+    vertex_colors = np.zeros((vertices.shape[0], 4), dtype=np.uint8)
+    vertex_colors[:, :3] = np.array(sclera_rgb, dtype=np.uint8)
+    vertex_colors[:, 3] = 255
+
+    vertex_colors[iris_mask, :3] = np.array(iris_rgb, dtype=np.uint8)
+    vertex_colors[pupil_mask, :3] = np.array(pupil_rgb, dtype=np.uint8)
+
+    mesh.visual.vertex_colors = vertex_colors
     return mesh
 
 
 def estimate_eye_centers_and_radii_from_landmarks(
     landmarks: np.ndarray,
-    center_depth_offset_scale: float = 0.58,
-    radius_from_width_scale: float = 0.36,
+    center_depth_offset_scale: float = 0.65,
+    radius_from_width_scale: float = 0.32,
 ) -> Dict[str, np.ndarray | float]:
     """
     Estimate eyeball centers and radii from 68-point landmarks.
@@ -1359,33 +1175,24 @@ def build_eye_meshes_from_landmarks(
     Pass landmarks AFTER your demo/world transform so the default gaze_direction
     of +Z points toward the camera in the current render setup.
     """
+    params = estimate_eye_centers_and_radii_from_landmarks(landmarks)
+
     iris_rgb = [90, 90, 90]
     if appearance_render_plan is not None and "eye_color_rgb" in appearance_render_plan:
         iris_rgb = list(appearance_render_plan["eye_color_rgb"])
 
-    base_gaze = _safe_normalize(np.asarray(gaze_direction, dtype=np.float64))
-    world_up = np.array([0.0, 1.0, 0.0], dtype=np.float64)
-    gaze_right = np.cross(world_up, base_gaze)
-    if np.linalg.norm(gaze_right) < 1e-8:
-        gaze_right = np.array([1.0, 0.0, 0.0], dtype=np.float64)
-    gaze_right = _safe_normalize(gaze_right)
-    gaze_up = _safe_normalize(np.cross(base_gaze, gaze_right))
-    base_gaze = _safe_normalize(base_gaze - 0.03 * gaze_up)
-
-    vergence = 0.035
-    left_gaze = _safe_normalize(base_gaze + vergence * gaze_right)
-    right_gaze = _safe_normalize(base_gaze - vergence * gaze_right)
-
     left_mesh = build_colored_eyeball_mesh(
-        eye_landmarks=np.asarray(landmarks[36:42], dtype=np.float64),
+        center=np.asarray(params["left_center"], dtype=np.float64),
+        radius=float(params["left_radius"]),
         iris_rgb=iris_rgb,
-        gaze_direction=left_gaze,
+        gaze_direction=gaze_direction,
     )
 
     right_mesh = build_colored_eyeball_mesh(
-        eye_landmarks=np.asarray(landmarks[42:48], dtype=np.float64),
+        center=np.asarray(params["right_center"], dtype=np.float64),
+        radius=float(params["right_radius"]),
         iris_rgb=iris_rgb,
-        gaze_direction=right_gaze,
+        gaze_direction=gaze_direction,
     )
 
     return left_mesh, right_mesh
