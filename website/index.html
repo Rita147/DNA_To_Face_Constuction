@@ -193,8 +193,95 @@
         </div>
       </div>
 
-      <!-- 2D / 3D COMPARISON -->
+      <!-- SINGLE-ATTRIBUTE VARIATION -->
       <div class="gallery-label">
+        <h3>Single-Attribute Variation</h3>
+        <p>The same base phenotype vector was used six times, each time changing exactly <strong>one trait</strong>. This shows that the fine-tuned model responds faithfully to individual phenotype inputs.</p>
+      </div>
+
+      <div class="variation-grid">
+
+        <!-- Card 1: Baseline -->
+        <div class="variation-card variation-card--baseline">
+          <div class="variation-img-wrap">
+            <img src="images/var_1.jpg" alt="Baseline" loading="lazy" class="variation-img" />
+            <div class="variation-badge variation-badge--lavender">Baseline</div>
+          </div>
+          <div class="variation-body">
+            <div class="variation-attr">No change <span class="variation-arrow">—</span> <strong>Reference</strong></div>
+            <p class="variation-note">The unmodified base phenotype vector used as reference for all variations.</p>
+          </div>
+        </div>
+
+        <!-- Card 2: Sex = Man -->
+        <div class="variation-card">
+          <div class="variation-img-wrap">
+            <img src="images/var_2.jpg" alt="Sex = Male" loading="lazy" class="variation-img" />
+            <div class="variation-badge variation-badge--blue">Sex</div>
+          </div>
+          <div class="variation-body">
+            <div class="variation-attr">Sex <span class="variation-arrow">→</span> <strong>Man</strong></div>
+            <p class="variation-note">All other 28 traits held constant from baseline.</p>
+          </div>
+        </div>
+
+        <!-- Card 3: Eye Colour = Blue -->
+        <div class="variation-card">
+          <div class="variation-img-wrap">
+            <img src="images/var_3.jpg" alt="Eye Colour = Blue" loading="lazy" class="variation-img" />
+            <div class="variation-badge variation-badge--blue">Eye Colour</div>
+          </div>
+          <div class="variation-body">
+            <div class="variation-attr">Eye Colour <span class="variation-arrow">→</span> <strong>Blue</strong></div>
+            <p class="variation-note">All other 28 traits held constant from baseline.</p>
+          </div>
+        </div>
+
+        <!-- Card 4: Hair Colour = Blonde -->
+        <div class="variation-card">
+          <div class="variation-img-wrap">
+            <img src="images/var_4.jpg" alt="Hair Colour = Blonde" loading="lazy" class="variation-img" />
+            <div class="variation-badge variation-badge--mint">Hair Colour</div>
+          </div>
+          <div class="variation-body">
+            <div class="variation-attr">Hair Colour <span class="variation-arrow">→</span> <strong>Blonde</strong></div>
+            <p class="variation-note">All other 28 traits held constant from baseline.</p>
+          </div>
+        </div>
+
+        <!-- Card 5: Skin Tone = Dark -->
+        <div class="variation-card">
+          <div class="variation-img-wrap">
+            <img src="images/var_5.jpg" alt="Skin Tone = Dark" loading="lazy" class="variation-img" />
+            <div class="variation-badge variation-badge--rose">Skin Tone</div>
+          </div>
+          <div class="variation-body">
+            <div class="variation-attr">Skin Tone <span class="variation-arrow">→</span> <strong>Dark</strong></div>
+            <p class="variation-note">All other 28 traits held constant from baseline.</p>
+          </div>
+        </div>
+
+        <!-- Card 6: Face Height = Long -->
+        <div class="variation-card">
+          <div class="variation-img-wrap">
+            <img src="images/var_6.jpg" alt="Face Height = Long" loading="lazy" class="variation-img" />
+            <div class="variation-badge variation-badge--mint">Face Height</div>
+          </div>
+          <div class="variation-body">
+            <div class="variation-attr">Face Height <span class="variation-arrow">→</span> <strong>Long</strong></div>
+            <p class="variation-note">All other 28 traits held constant from baseline.</p>
+          </div>
+        </div>
+
+      </div><!-- /variation-grid -->
+
+      <div class="variation-baseline-note">
+        <span>⚡</span>
+        <span>Each image varies exactly one trait from the baseline. All other 28 phenotype traits remain identical across all outputs.</span>
+      </div>
+
+      <!-- 2D / 3D COMPARISON -->
+      <div class="gallery-label" style="margin-top: 72px;">
         <h3>2D Portrait &amp; 3D FLAME Model</h3>
         <p>Each sample produces two outputs from the same phenotype vector: a Stable Diffusion portrait (left) and a FLAME-based 3D head model coloured with predicted appearance parameters (right).</p>
       </div>
@@ -215,7 +302,7 @@
           <div class="comparison-meta">
             <span class="comparison-id">SYNTH_000016</span>
             <div class="comparison-tags">
-              <span class="trait-tag">Male</span>
+              <span class="trait-tag">Man</span>
               <span class="trait-tag">Brown Eyes</span>
               <span class="trait-tag">Brown Hair</span>
               <span class="trait-tag">Dark Skin</span>
