@@ -109,16 +109,28 @@ def run_2d_image_generation(prompts_csv: Path, output_dir: Path) -> None:
     )
 
 
-def run_3d_generation(sample_ids: list[str], dataset_csv: Path, output_dir: Path) -> None:
-    run_command(
-        [
+def run_3d_generation(
+    sample_ids: list[str],
+    dataset_csv: Path,
+    output_dir: Path,
+    image_dir: Path | None = None,
+) -> None:
+    script = MODULE_DIR / "3d_generation" / "FLAME_PyTorch" / "generate_from_parameters.py"
+    for sample_id in sample_ids:
+        cmd = [
             sys.executable,
-            str(MODULE_DIR / "3d_generation" / "generate_from_parameters.py"),
-            "--sample-ids", *sample_ids,
+            str(script),
+            "--sample-id", sample_id,
             "--dataset-csv", str(dataset_csv),
             "--output-dir", str(output_dir),
         ]
-    )
+        # Auto-pass the portrait to DECA when Stage 4 already produced it
+        if image_dir is not None:
+            portrait = image_dir / f"{sample_id}.png"
+            if portrait.exists():
+                cmd += ["--image", str(portrait)]
+                print(f"  [DECA] using portrait: {portrait}")
+        run_command(cmd)
 
 
 def main() -> None:
@@ -206,10 +218,12 @@ def main() -> None:
                 sample_ids = []
 
         if sample_ids:
+            images_dir = PROJECT_ROOT / "data" / "generated_images"
             run_3d_generation(
                 sample_ids=sample_ids,
                 dataset_csv=DATASET_CSV_PATH,
                 output_dir=output_3d_dir,
+                image_dir=images_dir,
             )
         else:
             print("  No sample IDs found — skipping 3D generation.")

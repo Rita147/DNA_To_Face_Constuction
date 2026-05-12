@@ -30,9 +30,9 @@ from appearance_mappings import (
 from appearance_scene import (
     build_face_mesh_with_skin_tone,
     build_eye_meshes_from_landmarks,
-    build_hair_mesh,
+    build_hair_cap_mesh,
     render_meshes_offscreen,
-    resolve_hair_asset_path,
+    extract_skin_tone_from_portrait,
 )
 
 ACTIVE_PHENOTYPE_CSV_NAME = "predicted_phenotypes.csv"
@@ -212,6 +212,7 @@ def build_demo_scene_meshes(
     pitch_degrees: float = DEMO_RENDER_PITCH_DEGREES,
     yaw_degrees: float = DEMO_RENDER_YAW_DEGREES,
     extra_rotation_transform: Optional[np.ndarray] = None,
+    portrait_skin_rgb: Optional[np.ndarray] = None,
 ) -> List[trimesh.Trimesh]:
     """
     Build the full 3D scene meshes for one frame:
@@ -242,6 +243,7 @@ def build_demo_scene_meshes(
         vertices=vertices,
         faces=faces,
         appearance_render_plan=appearance_render_plan,
+        portrait_skin_rgb=portrait_skin_rgb,
     )
     face_mesh.apply_transform(demo_transform)
 
@@ -254,8 +256,9 @@ def build_demo_scene_meshes(
         gaze_direction=gaze_direction,
     )
 
-    hair_mesh = build_hair_mesh(
+    hair_mesh = build_hair_cap_mesh(
         vertices=vertices,
+        faces=faces,
         appearance_render_plan=appearance_render_plan,
     )
 
@@ -336,6 +339,7 @@ def save_spin_gif(
     fps: int = DEFAULT_GIF_FPS,
     image_size: Tuple[int, int] = (640, 640),
     appearance_render_plan: Optional[Dict[str, Any]] = None,
+    portrait_skin_rgb: Optional[np.ndarray] = None,
 ) -> None:
         frames: List[np.ndarray] = []
 
@@ -353,6 +357,7 @@ def save_spin_gif(
                 pitch_degrees=DEMO_RENDER_PITCH_DEGREES,
                 yaw_degrees=DEMO_RENDER_YAW_DEGREES,
                 extra_rotation_transform=rot_y,
+                portrait_skin_rgb=portrait_skin_rgb,
             )
 
             frame = render_meshes_offscreen(
@@ -1855,11 +1860,8 @@ def build_dataset_row_experiment_config(
 
     appearance_traits = extract_appearance_traits_from_row(row)
     appearance_render_plan = build_appearance_render_plan(appearance_traits)
-    resolved_hair_asset_path = resolve_hair_asset_path(appearance_render_plan)
-    appearance_render_plan["hair_asset_path"] = (
-        str(resolved_hair_asset_path) if resolved_hair_asset_path is not None else None
-    )
-    appearance_render_plan["hair_visible"] = resolved_hair_asset_path is not None
+    appearance_render_plan["hair_asset_path"] = None
+    appearance_render_plan["hair_visible"] = False
 
     geometry_traits = {
         "face_width": row["face_width"],
@@ -2241,6 +2243,18 @@ def load_measurements_by_name(names: List[str]) -> List[MeasurementDef]:
 
 
 def main():
+    import argparse as _argparse
+    _ap = _argparse.ArgumentParser(add_help=False)
+    _ap.add_argument("--image", type=Path, default=None, metavar="IMAGE_PATH",
+                     help="Portrait image path — uses DECA fitting instead of optimisation.")
+    _ap.add_argument("--sample-id", default=None, dest="sample_id",
+                     help="Override the hardcoded dataset_sample_id.")
+    _ap.add_argument("--dataset-csv", type=Path, default=None, dest="dataset_csv",
+                     help="Path to the phenotype CSV (overrides built-in default).")
+    _ap.add_argument("--output-dir", type=Path, default=None, dest="output_dir",
+                     help="Root directory for output files.")
+    _known, _ = _ap.parse_known_args()
+
     # ------------------------------------------------------------
     # 1) Setup
     # ------------------------------------------------------------
@@ -2276,8 +2290,9 @@ def main():
     # 2) Experiment selection
     # ------------------------------------------------------------
     dataset_mode = True
-    dataset_csv_path = Path(__file__).with_name(ACTIVE_PHENOTYPE_CSV_NAME)
-    dataset_sample_id = "SYNTH_001977"   # first strong geometry test row
+    dataset_csv_path = _known.dataset_csv or Path(__file__).with_name(ACTIVE_PHENOTYPE_CSV_NAME)
+    dataset_sample_id = _known.sample_id or "SYNTH_001977"
+    _base_output_dir = _known.output_dir or Path("experiments/outputs")
 
     dataset_metadata: Dict[str, object] | None = None
 
@@ -2395,6 +2410,60 @@ def main():
         print("\nAppearance render plan:")
         for key, value in dataset_metadata["appearance_render_plan"].items():  # type: ignore
             print(f"  - {key:24s} {value}")
+
+    # ------------------------------------------------------------
+    # 2b) DECA fitting — replaces the optimisation loop when --image is given.
+    #     Appearance traits from the dataset row are still used for hair / eyes.
+    # ------------------------------------------------------------
+    if _known.image is not None:
+        from deca_fitting import fit_deca  # noqa: PLC0415
+
+        image_path: Path = _known.image
+        if not image_path.exists():
+            import sys as _sys
+            _sys.stderr.write(f"[DECA] Portrait image not found: {image_path}\n")
+            _sys.exit(1)
+
+        print(f"\n[DECA] Fitting FLAME from portrait: {image_path}")
+        deca_result = fit_deca(image_path, device_str=str(device), use_tex=False)
+        print("[DECA] Fitting complete.")
+
+        portrait_skin_rgb = extract_skin_tone_from_portrait(image_path)
+        if portrait_skin_rgb is not None:
+            print(f"[DECA] Extracted skin-tone RGB: {portrait_skin_rgb.astype(int).tolist()}")
+
+        appearance_render_plan_deca = (
+            dataset_metadata.get("appearance_render_plan")
+            if dataset_mode and dataset_metadata is not None
+            else None
+        )
+
+        deca_out_dir = _base_output_dir / f"deca_{dataset_sample_id.lower()}"
+        deca_out_dir.mkdir(parents=True, exist_ok=True)
+
+        (deca_out_dir / "metrics.json").write_text(json.dumps({
+            "source_image": str(image_path),
+            "sample_id": dataset_sample_id,
+            "portrait_skin_rgb": portrait_skin_rgb.tolist() if portrait_skin_rgb is not None else None,
+        }, indent=2))
+
+        if generate_demo_gifs:
+            spin_gif_path = deca_out_dir / f"deca_{dataset_sample_id.lower()}_spin.gif"
+            save_spin_gif(
+                vertices=deca_result["vertices"],
+                faces=deca_result["faces"],
+                landmarks=deca_result["landmarks"],
+                output_path=spin_gif_path,
+                num_frames=spin_gif_frames,
+                fps=gif_fps,
+                image_size=gif_image_size,
+                appearance_render_plan=appearance_render_plan_deca,
+                portrait_skin_rgb=portrait_skin_rgb,
+            )
+            print(f"Saved DECA spin GIF to: {spin_gif_path}")
+
+        print(f"\n[DECA] Outputs saved to: {deca_out_dir}")
+        return
 
     # ------------------------------------------------------------
     # 3) Load measurements

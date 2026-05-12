@@ -1,0 +1,4 @@
+# Keep this setup folder in Git, but do not commit licensed FLAME assets.
+*
+!.gitignore
+!README.md

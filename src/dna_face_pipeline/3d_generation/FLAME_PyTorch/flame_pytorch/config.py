@@ -89,5 +89,5 @@ parser.add_argument(
 
 
 def get_config():
-    config = parser.parse_args()
+    config, _ = parser.parse_known_args()
     return config

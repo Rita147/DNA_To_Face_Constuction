@@ -25,6 +25,7 @@ For questions regarding the PyTorch implementation please contact soubhik.sanyal
 """
 # Modified from smplx code [https://github.com/vchoutas/smplx] for FLAME
 
+import io
 import pickle
 
 import numpy as np
@@ -32,6 +33,35 @@ import torch
 import torch.nn as nn
 from smplx.lbs import batch_rodrigues, lbs, vertices2landmarks
 from smplx.utils import Struct, rot_mat_to_euler, to_np, to_tensor
+
+
+class _ChumCompatUnpickler(pickle.Unpickler):
+    """Redirects chumpy.ch.Ch to a numpy-compatible stub during FLAME model loading."""
+
+    class _ChumProxy(np.ndarray):
+        def __new__(cls, x=None, *args, **kwargs):
+            return np.empty(0).view(cls)
+
+        def __array_finalize__(self, obj):
+            pass
+
+        def __setstate__(self, state):
+            if isinstance(state, dict) and "x" in state:
+                nd_state = np.asarray(state["x"]).__reduce__()[2]
+                super().__setstate__(nd_state)
+            elif isinstance(state, tuple) and len(state) == 5:
+                super().__setstate__(state)
+
+    def find_class(self, module: str, name: str):
+        if module.startswith("chumpy"):
+            return _ChumCompatUnpickler._ChumProxy
+        return super().find_class(module, name)
+
+
+def _load_flame_model(path: str) -> dict:
+    with open(path, "rb") as f:
+        data = f.read()
+    return _ChumCompatUnpickler(io.BytesIO(data), encoding="latin1").load()
 
 
 class FLAME(nn.Module):
@@ -43,8 +73,7 @@ class FLAME(nn.Module):
     def __init__(self, config):
         super(FLAME, self).__init__()
         print("creating the FLAME Decoder")
-        with open(config.flame_model_path, "rb") as f:
-            self.flame_model = Struct(**pickle.load(f, encoding="latin1"))
+        self.flame_model = Struct(**_load_flame_model(config.flame_model_path))
         self.NECK_IDX = 1
         self.batch_size = config.batch_size
         self.dtype = torch.float32

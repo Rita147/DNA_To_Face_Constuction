@@ -121,19 +121,8 @@ def _vertex_hash_noise(
 def _resolve_freckle_level(
     appearance_render_plan: Optional[Dict[str, Any]],
 ) -> str:
-    if appearance_render_plan is None:
-        return "none"
-
-    raw = appearance_render_plan.get("freckling_label", "none")
-    label = str(raw).strip().lower()
-
-    if label in {"none", "no", "absent", "unknown"}:
-        return "none"
-    if label in {"some", "light", "mild"}:
-        return "some"
-    if label in {"extensive", "many", "heavy"}:
-        return "extensive"
-
+    # Freckle vertex-coloring is disabled — individual freckle dots look like
+    # blemishes at FLAME's mesh resolution and are not rendered.
     return "none"
 
 
@@ -764,7 +753,51 @@ def build_skin_tone_vertex_colors(
     brightness_scale += forehead_lift * forehead_mask
     brightness_scale -= jaw_shadow * jaw_mask
     brightness_scale += chin_lift * chin_center_mask
-    brightness_scale = np.clip(brightness_scale, 0.82, 1.18)
+
+    # --- Ambient-occlusion-like feature shadows ---
+    # Eye sockets — upper orbital region above the eyes
+    left_socket = np.exp(
+        -(((x_norm + 0.25) / 0.11) ** 2 + ((y_norm - 0.64) / 0.06) ** 2)
+    ) * front
+    right_socket = np.exp(
+        -(((x_norm - 0.25) / 0.11) ** 2 + ((y_norm - 0.64) / 0.06) ** 2)
+    ) * front
+    brightness_scale -= 0.14 * np.clip(left_socket + right_socket, 0.0, 1.0)
+
+    # Under-nose shadow (philtrum top)
+    under_nose = np.exp(
+        -((x_norm / 0.09) ** 2 + ((y_norm - 0.47) / 0.035) ** 2)
+    ) * front
+    brightness_scale -= 0.10 * under_nose
+
+    # Nasolabial folds — subtle shadow lines beside the nose/mouth
+    left_nasolabial = np.exp(
+        -(((x_norm + 0.15) / 0.045) ** 2 + ((y_norm - 0.41) / 0.09) ** 2)
+    ) * front
+    right_nasolabial = np.exp(
+        -(((x_norm - 0.15) / 0.045) ** 2 + ((y_norm - 0.41) / 0.09) ** 2)
+    ) * front
+    brightness_scale -= 0.08 * np.clip(left_nasolabial + right_nasolabial, 0.0, 1.0)
+
+    # Under lower-lip / chin shadow
+    under_lip = np.exp(
+        -((x_norm / 0.20) ** 2 + ((y_norm - 0.24) / 0.035) ** 2)
+    ) * front
+    brightness_scale -= 0.10 * under_lip
+
+    # Lip border — thin dark line at the lip outline for definition
+    lip_border = np.exp(
+        -((x_norm / 0.20) ** 2 + ((y_norm - 0.33) / 0.022) ** 2)
+    ) * _smoothstep(0.60, 0.95, z_norm)
+    brightness_scale -= 0.12 * lip_border
+
+    # Lower-lip specular highlight — lower lip is naturally shinier
+    lower_lip_hi = np.exp(
+        -((x_norm / 0.10) ** 2 + ((y_norm - 0.27) / 0.025) ** 2)
+    ) * _smoothstep(0.65, 0.95, z_norm)
+    brightness_scale += 0.10 * lower_lip_hi
+
+    brightness_scale = np.clip(brightness_scale, 0.70, 1.20)
 
     vertex_rgb = vertex_rgb * brightness_scale[:, None]
     accent_region = np.clip(
@@ -973,6 +1006,58 @@ def build_skin_tone_vertex_colors(
 
         vertex_rgb[accent_mask] = freckle_color
 
+    # Hair region — paint back, sides, and top of the FLAME head with hair color.
+    # Replaces missing 3-D hair assets with vertex-level scalp coloring.
+    hair_color_rgb_raw = (appearance_render_plan or {}).get("hair_color_rgb")
+    if hair_color_rgb_raw is not None:
+        hair_rgb = np.array(hair_color_rgb_raw, dtype=np.float32) / 255.0
+
+        top_skull = _smoothstep(0.78, 0.92, y_norm) * _smoothstep(0.60, 0.35, z_norm)
+        back_head = _smoothstep(0.35, 0.12, z_norm) * _smoothstep(0.25, 0.50, y_norm)
+        side_head = (
+            _smoothstep(0.68, 0.88, np.abs(x_norm))
+            * _smoothstep(0.40, 0.15, z_norm)
+            * _smoothstep(0.40, 0.65, y_norm)
+        )
+        hair_weight = np.clip(top_skull + back_head + side_head, 0.0, 1.0)
+        vertex_rgb = _blend_rgb_toward_color(vertex_rgb, hair_rgb, hair_weight)
+
+    # Lip coloring — desaturate green/blue channels and warm the red to get a
+    # natural lip tone derived from the subject's own skin hue.
+    lip_front = _smoothstep(0.55, 0.95, z_norm)
+    lip_mask = np.exp(
+        -(
+            (x_norm / 0.18) ** 2
+            + ((y_norm - 0.30) / 0.09) ** 2
+        )
+    ) * lip_front
+
+    gender_label = str(
+        (appearance_render_plan or {}).get("gender_label", "")
+    ).strip().lower()
+
+    _skin_lip = np.array([
+        float(np.clip(base_rgb[0] * 0.88 + 0.06, 0.0, 1.0)),
+        float(np.clip(base_rgb[1] * 0.42,         0.0, 1.0)),
+        float(np.clip(base_rgb[2] * 0.50 + 0.02,  0.0, 1.0)),
+    ], dtype=np.float32)
+    _target_pink = np.array([0.78, 0.28, 0.32], dtype=np.float32)
+    lip_rgb = 0.35 * _skin_lip + 0.65 * _target_pink  # guaranteed visible pink
+
+    lip_base_alpha = 0.85 if gender_label == "female" else 0.72
+    lip_alpha = np.clip(lip_base_alpha * lip_mask, 0.0, lip_base_alpha)
+    vertex_rgb = _blend_rgb_toward_color(vertex_rgb, lip_rgb, lip_alpha)
+
+    # Rosy cheek tint for female renders
+    if gender_label == "female":
+        female_cheek_rgb = np.array([
+            float(np.clip(base_rgb[0] * 1.04 + 0.03, 0.0, 1.0)),
+            float(np.clip(base_rgb[1] * 0.90,         0.0, 1.0)),
+            float(np.clip(base_rgb[2] * 0.88,         0.0, 1.0)),
+        ], dtype=np.float32)
+        female_cheek_alpha = np.clip(0.18 * cheek_mask, 0.0, 0.18)
+        vertex_rgb = _blend_rgb_toward_color(vertex_rgb, female_cheek_rgb, female_cheek_alpha)
+
     vertex_rgb = np.clip(vertex_rgb, 0.0, 1.0)
 
     alpha = np.full((vertices.shape[0], 1), base_rgba[3], dtype=np.float32)
@@ -981,21 +1066,181 @@ def build_skin_tone_vertex_colors(
     return rgba_float_to_uint8(vertex_rgba)
 
 
+def build_hair_cap_mesh(
+    vertices: np.ndarray,
+    faces: np.ndarray,
+    appearance_render_plan: Optional[Dict[str, Any]],
+    hair_thickness: float = 0.007,
+    hair_threshold: float = 0.35,
+) -> Optional[trimesh.Trimesh]:
+    """
+    Build a procedural hair cap by offsetting the scalp portion of the FLAME mesh
+    outward along vertex normals.  Uses the same region mask as the scalp vertex
+    coloring so the cap aligns perfectly with the colored region.
+
+    Returns None if no hair color is specified or the scalp region is empty.
+    """
+    hair_color_rgb_raw = (appearance_render_plan or {}).get("hair_color_rgb")
+    if hair_color_rgb_raw is None:
+        return None
+
+    # Compute normalized coordinate bands (same as used in skin tone coloring)
+    verts = np.asarray(vertices, dtype=np.float32)
+    mins = verts.min(axis=0)
+    maxs = verts.max(axis=0)
+    extents = np.maximum(maxs - mins, 1e-6)
+    center_x = 0.5 * (mins[0] + maxs[0])
+
+    y_norm = (verts[:, 1] - mins[1]) / extents[1]
+    z_norm = (verts[:, 2] - mins[2]) / extents[2]
+    x_norm = (verts[:, 0] - center_x) / (0.5 * extents[0] + 1e-6)
+
+    # Hair region weights (mirrors the vertex-coloring mask)
+    top_skull = _smoothstep(0.78, 0.92, y_norm) * _smoothstep(0.60, 0.35, z_norm)
+    back_head = _smoothstep(0.35, 0.12, z_norm) * _smoothstep(0.25, 0.50, y_norm)
+    side_head = (
+        _smoothstep(0.68, 0.88, np.abs(x_norm))
+        * _smoothstep(0.40, 0.15, z_norm)
+        * _smoothstep(0.40, 0.65, y_norm)
+    )
+    hair_weight = np.clip(top_skull + back_head + side_head, 0.0, 1.0)
+
+    inner_mask = hair_weight >= hair_threshold
+    inner_indices = np.where(inner_mask)[0]
+    if len(inner_indices) == 0:
+        return None
+
+    # Extract faces whose every vertex is in the hair region
+    face_arr = np.asarray(faces, dtype=np.int64)
+    face_in_hair = np.all(inner_mask[face_arr], axis=1)
+    hair_faces = face_arr[face_in_hair]
+    if len(hair_faces) == 0:
+        return None
+
+    # Remap global vertex indices to local
+    old_to_new = np.full(len(vertices), -1, dtype=np.int64)
+    old_to_new[inner_indices] = np.arange(len(inner_indices))
+    local_faces = old_to_new[hair_faces]
+    valid_faces = np.all(local_faces >= 0, axis=1)
+    local_faces = local_faces[valid_faces]
+    if len(local_faces) == 0:
+        return None
+
+    # Compute vertex normals from the full FLAME mesh and offset scalp outward
+    base_mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
+    vnormals = np.asarray(base_mesh.vertex_normals, dtype=np.float64)
+
+    inner_verts = np.asarray(vertices[inner_indices], dtype=np.float64)
+    outer_verts = inner_verts + vnormals[inner_indices] * float(hair_thickness)
+
+    # Build the outer shell (reversed winding so normals point outward)
+    hair_shell = trimesh.Trimesh(
+        vertices=outer_verts,
+        faces=local_faces[:, ::-1],
+        process=False,
+    )
+    hair_shell.fix_normals()
+
+    # Uniform hair color
+    hair_rgb = list(hair_color_rgb_raw)
+    hair_shell.visual.vertex_colors = build_uniform_vertex_colors(
+        len(hair_shell.vertices), hair_rgb, alpha_uint8=255
+    )
+    return hair_shell
+
+
+def extract_skin_tone_from_portrait(image_path: Path) -> Optional[np.ndarray]:
+    """
+    Extract the average skin-tone RGB from the face centre of a portrait.
+
+    Samples a rough centre crop and keeps pixels whose hue is plausibly
+    skin-like (not too dark, not too bright, red channel dominant over blue).
+
+    Returns float32 RGB in [0, 255] or *None* if the image cannot be read
+    or too few skin-like pixels are found.
+    """
+    try:
+        from PIL import Image as PILImage
+    except ImportError:
+        print("[appearance_scene] Pillow not available; skipping portrait skin-tone extraction.")
+        return None
+
+    try:
+        img = np.array(PILImage.open(str(image_path)).convert("RGB"), dtype=np.float32)
+    except Exception as exc:
+        print(f"[appearance_scene] Could not read portrait image: {exc}")
+        return None
+
+    h, w = img.shape[:2]
+    y0, y1 = int(h * 0.20), int(h * 0.75)
+    x0, x1 = int(w * 0.25), int(w * 0.75)
+    crop = img[y0:y1, x0:x1]
+    if crop.size == 0:
+        return None
+
+    r, g, b = crop[:, :, 0], crop[:, :, 1], crop[:, :, 2]
+    mask = (r > 60) & (r < 240) & ((r - b).astype(np.float32) > 8.0)
+
+    skin_rgb = crop[mask].mean(axis=0) if mask.sum() >= 50 else crop.reshape(-1, 3).mean(axis=0)
+    return np.clip(skin_rgb, 0.0, 255.0).astype(np.float32)
+
+
+def _slim_jaw_for_female(vertices: np.ndarray, x_scale: float = 0.87) -> np.ndarray:
+    """
+    Narrow the jaw/chin for female subjects by smoothly scaling x coordinates
+    toward the face centreline in the lower 40% of the face.
+    Full effect at the chin (bottom), fading to zero at 40% face height.
+    """
+    verts = vertices.copy()
+    y_min = float(verts[:, 1].min())
+    y_max = float(verts[:, 1].max())
+    y_norm = (verts[:, 1] - y_min) / max(y_max - y_min, 1e-6)
+
+    jaw_weight = np.clip(1.0 - y_norm / 0.40, 0.0, 1.0) ** 2
+
+    x_center = 0.5 * (float(verts[:, 0].min()) + float(verts[:, 0].max()))
+    scale_per_vert = 1.0 - jaw_weight * (1.0 - x_scale)
+    verts[:, 0] = x_center + (verts[:, 0] - x_center) * scale_per_vert
+
+    return verts
+
+
 def build_face_mesh_with_skin_tone(
     vertices: np.ndarray,
     faces: np.ndarray,
     appearance_render_plan: Optional[Dict[str, Any]] = None,
+    portrait_skin_rgb: Optional[np.ndarray] = None,
 ) -> trimesh.Trimesh:
     """
     Build the FLAME face mesh with adaptive, region-aware skin-tone vertex coloring.
+
+    Parameters
+    ----------
+    portrait_skin_rgb:
+        Optional float32 RGB in [0, 255] extracted from the source portrait
+        (e.g. via :func:`extract_skin_tone_from_portrait`).  When provided it
+        overrides the dataset skin-tone lookup, acting as the albedo base colour.
     """
+    if portrait_skin_rgb is not None:
+        effective_plan: Dict[str, Any] = dict(appearance_render_plan) if appearance_render_plan else {}
+        effective_plan["skin_tone_label"] = ""
+        effective_plan["skin_tone_rgb"] = [float(c) for c in portrait_skin_rgb[:3]]
+    else:
+        effective_plan = appearance_render_plan  # type: ignore[assignment]
+
+    gender_label = str(
+        (effective_plan or {}).get("gender_label", "")
+    ).strip().lower()
+
+    render_vertices = _slim_jaw_for_female(vertices) if gender_label == "female" else vertices
+
     vertex_colors = build_skin_tone_vertex_colors(
-        vertices=vertices,
-        appearance_render_plan=appearance_render_plan,
+        vertices=render_vertices,
+        appearance_render_plan=effective_plan,
     )
 
     return trimesh.Trimesh(
-        vertices=vertices.copy(),
+        vertices=render_vertices.copy(),
         faces=faces,
         vertex_colors=vertex_colors,
         process=False,
@@ -1057,9 +1302,9 @@ def build_colored_eyeball_mesh(
     radius: float,
     iris_rgb: Sequence[int],
     gaze_direction: Sequence[float] = (0.0, 0.0, 1.0),
-    sclera_rgb: Sequence[int] = (245, 245, 245),
+    sclera_rgb: Sequence[int] = (232, 224, 208),
     pupil_rgb: Sequence[int] = (20, 20, 20),
-    iris_angle_degrees: float = 22.0,
+    iris_angle_degrees: float = 28.0,
     pupil_angle_degrees: float = 9.5,
     subdivisions: int = 3,
 ) -> trimesh.Trimesh:
@@ -1114,8 +1359,9 @@ def build_colored_eyeball_mesh(
 
 def estimate_eye_centers_and_radii_from_landmarks(
     landmarks: np.ndarray,
-    center_depth_offset_scale: float = 0.65,
-    radius_from_width_scale: float = 0.32,
+    center_depth_offset_scale: float = 0.50,
+    radius_from_width_scale: float = 0.30,
+    gaze_direction: Optional[Sequence[float]] = None,
 ) -> Dict[str, np.ndarray | float]:
     """
     Estimate eyeball centers and radii from 68-point landmarks.
@@ -1126,14 +1372,21 @@ def estimate_eye_centers_and_radii_from_landmarks(
     - left width landmarks: 36, 39
     - right width landmarks: 42, 45
 
-    This function assumes the landmarks are already in the render/world frame
-    where the camera faces roughly toward +Z, so eyeball centers are moved
-    slightly backward along -Z.
+    gaze_direction: the direction the face is looking (default +Z).  The
+    depth offset is applied OPPOSITE to this vector so the eyes are pushed
+    inward regardless of how the head is rotated for the spin GIF.
     """
     if landmarks.ndim != 2 or landmarks.shape[1] != 3:
         raise ValueError("landmarks must have shape (N, 3)")
     if landmarks.shape[0] < 48:
         raise ValueError("Expected at least 48 landmarks for eye estimation.")
+
+    if gaze_direction is None:
+        inward = np.array([0.0, 0.0, -1.0], dtype=np.float64)
+    else:
+        gaze = np.asarray(gaze_direction, dtype=np.float64)
+        norm = np.linalg.norm(gaze)
+        inward = -(gaze / norm) if norm > 1e-8 else np.array([0.0, 0.0, -1.0])
 
     left_eye_ring = landmarks[36:42]
     right_eye_ring = landmarks[42:48]
@@ -1144,17 +1397,8 @@ def estimate_eye_centers_and_radii_from_landmarks(
     left_radius = max(1e-5, radius_from_width_scale * left_width)
     right_radius = max(1e-5, radius_from_width_scale * right_width)
 
-    left_center = np.mean(left_eye_ring, axis=0)
-    right_center = np.mean(right_eye_ring, axis=0)
-
-    left_center = left_center + np.array(
-        [0.0, 0.0, -center_depth_offset_scale * left_radius],
-        dtype=np.float64,
-    )
-    right_center = right_center + np.array(
-        [0.0, 0.0, -center_depth_offset_scale * right_radius],
-        dtype=np.float64,
-    )
+    left_center = np.mean(left_eye_ring, axis=0) + inward * center_depth_offset_scale * left_radius
+    right_center = np.mean(right_eye_ring, axis=0) + inward * center_depth_offset_scale * right_radius
 
     return {
         "left_center": left_center,
@@ -1175,7 +1419,10 @@ def build_eye_meshes_from_landmarks(
     Pass landmarks AFTER your demo/world transform so the default gaze_direction
     of +Z points toward the camera in the current render setup.
     """
-    params = estimate_eye_centers_and_radii_from_landmarks(landmarks)
+    params = estimate_eye_centers_and_radii_from_landmarks(
+        landmarks,
+        gaze_direction=gaze_direction,
+    )
 
     iris_rgb = [90, 90, 90]
     if appearance_render_plan is not None and "eye_color_rgb" in appearance_render_plan:

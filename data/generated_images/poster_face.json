@@ -1,0 +1,17 @@
+{
+  "sample_id": "poster_face",
+  "source_row": 0,
+  "seed": 0,
+  "positive_prompt": "poster-ready professional portrait photograph, high quality, photorealistic, beautiful young woman, curly brown hair, dark brown eyes, light skin with freckles, full lips, small nose, soft natural makeup, warm confident expression, centered face, soft studio lighting, clean plain background",
+  "negative_prompt": "deformed, ugly, blurry, bad anatomy, bad hands, extra fingers, missing fingers, fused fingers, too many fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, disfigured, extra limbs, cloned face, malformed limbs, missing arms, missing legs, extra arms, extra legs, low quality, worst quality, jpeg artifacts, watermark, signature, text, cropped, out of frame, duplicate, morbid, gross proportions, long neck, asymmetrical eyes, crossed eyes, lazy eye, skin blemishes, acne, overexposed, underexposed, cartoon, anime, illustration, painting, drawing, sketch, 3d render, cgi, plastic skin, doll-like, distorted face, multiple people",
+  "image_path": "C:\\Users\\rita\\Desktop\\Fourth_Year\\GraduationProject\\data\\generated_images\\poster_face.png",
+  "model_id": "runwayml/stable-diffusion-v1-5",
+  "lora_path": "C:\\Users\\rita\\Desktop\\Fourth_Year\\GraduationProject\\assets\\lora\\hq_v2\\celeba_hq_lora-step00008000.safetensors",
+  "lora_scale": 0.8,
+  "num_inference_steps": 30,
+  "guidance_scale": 7.5,
+  "width": 512,
+  "height": 512,
+  "seed_offset": 0,
+  "device": "cuda"
+}
